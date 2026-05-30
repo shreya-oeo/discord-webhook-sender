@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discord Webhook Sender</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg-primary:#36393f;--bg-secondary:#2f3136;--bg-tertiary:#202225;
+--bg-input:#40444b;--text-primary:#dcddde;--text-secondary:#96989d;
+--text-muted:#72767d;--accent:#5865f2;--accent-hover:#4752c4;
+--success:#3ba55d;--error:#ed4245;--warning:#faa61a;
+--border:#44474c;--radius:8px;
+--btn-primary:#5865f2;--btn-secondary:#4f545c;--btn-success:#3ba55d;--btn-danger:#ed4245;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-tertiary)}
+::-webkit-scrollbar-thumb{background:var(--bg-input);border-radius:3px}
+
+.header{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{font-size:20px;font-weight:700;color:#fff}
+.header-actions{display:flex;gap:8px}
+
+.tabs{display:flex;background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0 24px;overflow-x:auto}
+.tab{padding:10px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text-muted);border-bottom:2px solid transparent;transition:color .2s,border-color .2s;user-select:none;white-space:nowrap}
+.tab:hover{color:var(--text-primary)}
+.tab.active{color:#fff;border-bottom-color:var(--accent)}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.container{padding:20px 24px;max-width:1400px;margin:0 auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+
+.panel{background:var(--bg-primary);border-radius:var(--radius);padding:18px;border:1px solid var(--border);margin-bottom:16px}
+.panel-title{font-size:14px;font-weight:600;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel-title svg{width:16px;height:16px;flex-shrink:0}
+
+label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-secondary);margin-bottom:4px;letter-spacing:.5px}
+.field{margin-bottom:12px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+input[type=text],input[type=url],input[type=number],textarea,select{
+width:100%;background:var(--bg-input);border:none;border-radius:6px;padding:9px 11px;
+color:var(--text-primary);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:box-shadow .2s}
+input:focus,textarea:focus,select:focus{box-shadow:0 0 0 2px var(--accent)}
+textarea{resize:vertical;min-height:70px}
+select{cursor:pointer}
+
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer;flex-shrink:0}
+.toggle input{display:none}
+.toggle .slider{position:absolute;inset:0;background:var(--bg-input);border-radius:11px;transition:background .2s}
+.toggle .slider::before{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s}
+.toggle input:checked+.slider{background:var(--accent)}
+.toggle input:checked+.slider::before{transform:translateX(18px)}
+.toggle-label{font-size:13px;color:var(--text-primary)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border:none;border-radius:6px;
+font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,transform .1s,opacity .2s;white-space:nowrap}
+.btn:active{transform:scale(.98)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 8px;font-size:11px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--bg-input);color:var(--text-primary)}
+.btn-secondary:hover{background:#4f545c}
+.btn-danger{background:var(--error);color:#fff}
+.btn-danger:hover{background:#c0392b}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#2d8049}
+.btn-warning{background:var(--warning);color:#000}
+.btn-warning:hover{background:#d4910f}
+.btn-block{width:100%}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+.embed-field-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px}
+.embed-field-row .field{margin-bottom:0}
+
+.saved-webhook{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-secondary);border-radius:6px;margin-bottom:6px;cursor:pointer;transition:background .2s}
+.saved-webhook:hover{background:var(--bg-input)}
+.saved-webhook.active{outline:2px solid var(--accent)}
+.saved-webhook .name{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saved-webhook .url{font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+
+.history-item{background:var(--bg-secondary);border-radius:6px;padding:12px;margin-bottom:8px;border:1px solid transparent;transition:border-color .2s}
+.history-item:hover{border-color:var(--border)}
+.history-item .meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.history-item .meta .time{font-size:11px;color:var(--text-muted)}
+.history-item .msg-body{font-size:13px;color:var(--text-primary);white-space:pre-wrap;word-break:break-word;line-height:1.4;max-height:80px;overflow:hidden}
+.history-item .msg-actions{display:flex;gap:4px;margin-top:8px}
+
+.template-card{background:var(--bg-secondary);border-radius:6px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:background .2s}
+.template-card:hover{background:var(--bg-input)}
+.template-card .t-name{font-size:13px;font-weight:500}
+.template-card .t-info{font-size:11px;color:var(--text-muted)}
+
+.preview-area{min-height:200px;position:relative}
+.preview-card{background:var(--bg-secondary);border-radius:var(--radius);padding:16px}
+.preview-username{font-size:14px;font-weight:600;color:#fff}
+.preview-content{font-size:13px;color:var(--text-primary);white-space:pre-wrap;word-break:break-word;line-height:1.5;margin-top:4px}
+.embed-preview{border-left:4px solid var(--accent);border-radius:4px;background:var(--bg-primary)!important;padding:12px 16px;margin-top:8px}
+.embed-preview .embed-author{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;margin-bottom:6px}
+.embed-preview .embed-author img{width:20px;height:20px;border-radius:50%}
+.embed-preview .embed-title{font-size:14px;font-weight:600;color:#fff;margin-bottom:4px}
+.embed-preview .embed-desc{font-size:13px;color:var(--text-primary);white-space:pre-wrap;word-break:break-word;line-height:1.4}
+.embed-preview .embed-field{margin-top:8px}
+.embed-preview .embed-field-name{font-size:13px;font-weight:600;color:#fff}
+.embed-preview .embed-field-value{font-size:13px;color:var(--text-primary)}
+.embed-preview .embed-field.inline{display:inline-block;width:33%;vertical-align:top}
+.embed-preview .embed-image{margin-top:8px;max-width:100%;border-radius:4px}
+.embed-preview .embed-thumb{float:right;max-width:80px;max-height:80px;border-radius:4px;margin-left:8px}
+.embed-preview .embed-footer{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);margin-top:8px}
+.embed-preview .embed-footer img{width:14px;height:14px;border-radius:50%}
+.embed-preview .embed-timestamp{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+.preview-actions{margin-top:12px}
+.action-row-preview{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.action-btn-preview{font-size:13px;font-weight:500;padding:6px 14px;border-radius:4px;cursor:default;display:inline-flex;align-items:center;gap:4px}
+.action-btn-preview.link-btn{background:var(--btn-primary);color:#fff}
+.action-btn-preview.secondary-btn{background:var(--btn-secondary);color:#fff}
+.action-btn-preview.success-btn{background:var(--btn-success);color:#fff}
+.action-btn-preview.danger-btn{background:var(--btn-danger);color:#fff}
+.action-btn-preview.disabled-btn{opacity:0.4;cursor:not-allowed;text-decoration:line-through}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500;color:#fff;opacity:0;transition:transform .3s,opacity .3s;z-index:1000;pointer-events:none}
+.toast.visible{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--error)}
+
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg-primary);border-radius:var(--radius);padding:24px;width:90%;max-width:500px;border:1px solid var(--border);max-height:90vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:600;color:#fff;margin-bottom:16px}
+.modal .btn-group{margin-top:16px}
+
+.char-count{font-size:11px;color:var(--text-muted);text-align:right;margin-top:2px}
+.char-count.warn{color:var(--warning)}
+.char-count.over{color:var(--error)}
+
+.collapsible-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:4px 0}
+.collapsible-header svg.chevron{transition:transform .2s}
+.collapsible-header.open svg.chevron{transform:rotate(90deg)}
+.collapsible-body{overflow:hidden;transition:max-height .3s;max-height:0}
+.collapsible-body.open{max-height:3000px}
+
+.file-drop{border:2px dashed var(--border);border-radius:6px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:12px}
+.file-drop:hover{border-color:var(--accent);background:rgba(88,101,242,.05)}
+.file-drop.dragover{border-color:var(--accent);background:rgba(88,101,242,.1)}
+.file-drop p{color:var(--text-muted);font-size:13px}
+.file-drop .filename{color:var(--text-primary);font-weight:500;margin-top:4px}
+
+.empty-state{text-align:center;padding:32px 16px;color:var(--text-muted)}
+.empty-state svg{width:40px;height:40px;margin-bottom:8px;opacity:.5}
+.empty-state p{font-size:13px}
+
+.action-row-item{background:var(--bg-secondary);border-radius:6px;padding:10px 12px;margin-bottom:8px;border:1px solid var(--border)}
+.action-row-item .row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.action-row-item .row-header span{font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase}
+.action-row-item .btn-row-grid{display:grid;gap:6px}
+.btn-item{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg-input);border-radius:4px;position:relative}
+.btn-item select,.btn-item input[type=text]{font-size:12px;padding:4px 6px}
+.btn-item input[type=text]{flex:1;min-width:0}
+.btn-item .btn-emoji-display{cursor:pointer;font-size:16px;min-width:24px;text-align:center;padding:2px;background:var(--bg-tertiary);border-radius:4px;line-height:1}
+.btn-item .btn-emoji-display:hover{background:var(--accent)}
+
+.emoji-picker{position:fixed;z-index:300;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);width:320px;max-height:340px;display:none;flex-direction:column}
+.emoji-picker.open{display:flex}
+.emoji-picker .ep-header{padding:8px;border-bottom:1px solid var(--border)}
+.emoji-picker .ep-header input{width:100%;background:var(--bg-input);border:none;border-radius:6px;padding:8px 10px;color:var(--text-primary);font-size:13px;outline:none}
+.emoji-picker .ep-tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.emoji-picker .ep-tab{padding:6px 10px;font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+.emoji-picker .ep-tab:hover{color:var(--text-primary)}
+.emoji-picker .ep-tab.active{color:#fff;border-bottom-color:var(--accent)}
+.emoji-picker .ep-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:8px;overflow-y:auto;max-height:220px}
+.emoji-picker .ep-grid span{font-size:20px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:4px;transition:background .1s}
+.emoji-picker .ep-grid span:hover{background:var(--bg-input)}
+.emoji-picker .ep-grid img.ep-custom{width:24px;height:24px;object-fit:contain}
+.emoji-picker .ep-custom-section{padding:8px}
+.emoji-picker .ep-custom-section label{font-size:11px;color:var(--text-muted);margin-bottom:4px;display:block}
+.emoji-picker .ep-custom-section .field-row{margin-top:4px}
+.emoji-picker .ep-custom-section input{font-size:12px;padding:6px 8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Discord Webhook Sender</h1>
+  <div class="header-actions">
+    <button class="btn btn-sm btn-secondary" onclick="exportAllData()" title="Export all data">Export</button>
+    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('importFile').click()" title="Import data">Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importAllData(event)">
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="compose" onclick="switchTab('compose')">Compose</div>
+  <div class="tab" data-tab="history" onclick="switchTab('history')">History</div>
+  <div class="tab" data-tab="templates" onclick="switchTab('templates')">Templates</div>
+  <div class="tab" data-tab="webhooks" onclick="switchTab('webhooks')">Webhooks</div>
+</div>
+
+<div class="tab-content active" data-tab="compose">
+  <div class="container">
+    <div class="grid2">
+      <div>
+        <div class="panel">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            Webhook
+          </div>
+          <div class="field">
+            <label>Saved Webhook</label>
+            <select id="savedWebhookSelect" onchange="loadSavedWebhook()">
+              <option value="">-- Select a saved webhook --</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Webhook URL</label>
+            <input type="url" id="webhook" placeholder="https://discord.com/api/webhooks/...">
+            <div class="char-count" id="webhookStatus"></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Username</label>
+              <input type="text" id="username" placeholder="Custom name">
+            </div>
+            <div class="field">
+              <label>Avatar URL</label>
+              <input type="url" id="avatarUrl" placeholder="https://...">
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Message
+          </div>
+
+          <div class="field">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <label style="margin-bottom:0">Content</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button class="btn btn-xs btn-secondary" onclick="openEmojiPicker(event,'content')" title="Insert emoji">&#x1F60A; Emoji</button>
+                <label class="toggle" style="margin-bottom:0;display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="checkbox" id="ttsToggle">
+                  <span class="toggle-label" style="font-size:11px;text-transform:uppercase;font-weight:600;color:var(--text-muted)">TTS</span>
+                </label>
+              </div>
+            </div>
+            <textarea id="content" rows="5" placeholder="Type your message here... (Markdown supported)&#10;&#10;Unicode emoji: &#x1F60A; &#x1F44D; &#x2764;&#xFE0F;&#10;Custom emoji: :name: or :name:id (preview won't render these)"></textarea>
+            <div class="char-count" id="contentCount">0 / 2000</div>
+          </div>
+
+          <div class="field">
+            <label>File Attachment</label>
+            <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
+              <p>Click or drag a file here (max 25MB)</p>
+              <div class="filename" id="fileName"></div>
+            </div>
+            <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(event)">
+          </div>
+
+          <div class="field">
+            <label>Message ID (for editing/deleting)</label>
+            <div class="field-row">
+              <input type="text" id="messageId" placeholder="Leave empty for new message">
+              <div class="btn-group" style="align-items:end">
+                <button class="btn btn-xs btn-secondary" onclick="loadLastMessageId()" title="Use last sent message ID">Last ID</button>
+                <button class="btn btn-xs btn-danger" onclick="deleteMessage()" title="Delete this message">Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <div class="panel-title" style="margin-bottom:0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="21" height="18" rx="2"/><path d="M3 9h21"/></svg>
+              Embed
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <label class="toggle" style="margin:0">
+                <input type="checkbox" id="embedToggle" onchange="toggleEmbed()">
+                <span class="slider"></span>
+              </label>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div class="collapsible-body" id="embedBody">
+            <div style="padding-top:12px">
+              <div class="field-row">
+                <div class="field">
+                  <label>Author Name</label>
+                  <input type="text" id="embedAuthorName" placeholder="Author name">
+                </div>
+                <div class="field">
+                  <label>Author Icon URL</label>
+                  <input type="url" id="embedAuthorIcon" placeholder="https://...">
+                </div>
+              </div>
+              <div class="field">
+                <label>Author URL</label>
+                <input type="url" id="embedAuthorUrl" placeholder="https://...">
+              </div>
+
+              <div class="field">
+                <label>Title</label>
+                <input type="text" id="embedTitle" placeholder="Embed title">
+              </div>
+              <div class="field">
+                <label>URL (title link)</label>
+                <input type="url" id="embedUrl" placeholder="https://...">
+              </div>
+              <div class="field">
+                <label>Description</label>
+                <textarea id="embedDesc" rows="3" placeholder="Embed description..."></textarea>
+                <div class="char-count" id="embedDescCount">0 / 4096</div>
+              </div>
+
+              <div class="field">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <label style="margin-bottom:0">Fields</label>
+                  <button class="btn btn-xs btn-secondary" onclick="addEmbedField()">+ Add Field</button>
+                </div>
+                <div id="embedFieldsContainer"></div>
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label>Thumbnail URL</label>
+                  <input type="url" id="embedThumbnail" placeholder="https://...">
+                </div>
+                <div class="field">
+                  <label>Image URL</label>
+                  <input type="url" id="embedImage" placeholder="https://...">
+                </div>
+              </div>
+
+              <div class="field">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  <label style="margin-bottom:0">Color</label>
+                  <input type="color" id="embedColorPicker" value="#5865f2" style="width:32px;height:24px;padding:0;border:none;background:none;cursor:pointer" onchange="syncColor('picker')">
+                  <input type="text" id="embedColor" value="#5865f2" style="width:90px;padding:4px 8px;font-size:12px" onchange="syncColor('text')">
+                </div>
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label>Footer Text</label>
+                  <input type="text" id="embedFooterText" placeholder="Footer text">
+                </div>
+                <div class="field">
+                  <label>Footer Icon URL</label>
+                  <input type="url" id="embedFooterIcon" placeholder="https://...">
+                </div>
+              </div>
+
+              <div class="toggle-row">
+                <label class="toggle" style="margin:0">
+                  <input type="checkbox" id="embedTimestamp" checked>
+                  <span class="slider"></span>
+                </label>
+                <span class="toggle-label">Include Timestamp</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="collapsible-header" onclick="toggleCollapse(this)">
+            <div class="panel-title" style="margin-bottom:0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12h6"/><path d="M12 9v6"/></svg>
+              Buttons (Components)
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:11px;color:var(--text-muted)">Max 5 per row, 1 row</span>
+              <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div class="collapsible-body" id="buttonsBody">
+            <div style="padding-top:12px">
+              <div style="background:var(--bg-secondary);border-radius:6px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--text-muted);line-height:1.5">
+                <div style="background:rgba(250,166,26,.15);border:1px solid var(--warning);border-radius:4px;padding:6px 8px;margin-bottom:8px;font-size:12px;color:var(--warning)">
+                  <strong>&#x26A0; Webhook Limitation:</strong> Only <strong>Link buttons</strong> (style 5) work with webhooks. Non-link buttons (Primary, Secondary, Success, Danger) require a bot interaction handler and <strong>will be rejected</strong> by the API. Use Link buttons to open URLs.
+                </div>
+                Each message supports up to <strong>5 buttons</strong> per action row. Emoji on buttons: Unicode emoji (e.g. &#x1F44D;) or custom format <code style="background:var(--bg-input);padding:1px 4px;border-radius:3px">:name:id</code>.
+              </div>
+              <div id="actionRowsContainer"></div>
+              <button class="btn btn-sm btn-secondary" onclick="addActionButton()" style="margin-top:4px">+ Add Button</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary btn-block" id="sendBtn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send Message
+          </button>
+        </div>
+        <div class="btn-group" style="margin-top:8px">
+          <button class="btn btn-secondary btn-block" onclick="saveAsTemplate()">Save as Template</button>
+          <button class="btn btn-secondary btn-block" onclick="clearForm()">Clear Form</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Live Preview
+          </div>
+          <div class="preview-area" id="preview">
+            <div class="preview-card">
+              <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <p>Your message preview will appear here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" data-tab="history">
+  <div class="container" style="max-width:900px">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="panel-title" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Message History
+        </div>
+        <button class="btn btn-xs btn-danger" onclick="clearHistory()">Clear All</button>
+      </div>
+      <div id="historyList">
+        <div class="empty-state"><p>No messages sent yet</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" data-tab="templates">
+  <div class="container" style="max-width:900px">
+    <div class="panel">
+      <div class="panel-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Saved Templates
+      </div>
+      <div id="templateList">
+        <div class="empty-state"><p>No templates saved yet. Compose a message and click "Save as Template".</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-content" data-tab="webhooks">
+  <div class="container" style="max-width:900px">
+    <div class="panel">
+      <div class="panel-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Saved Webhooks
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Name</label>
+          <input type="text" id="newWebhookName" placeholder="My Server Webhook">
+        </div>
+        <div class="field">
+          <label>URL</label>
+          <input type="url" id="newWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addWebhook()" style="margin-bottom:16px">Save Webhook</button>
+      <div id="webhookList">
+        <div class="empty-state"><p>No saved webhooks yet. Add one above.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="templateModal">
+  <div class="modal">
+    <h3>Save Template</h3>
+    <div class="field">
+      <label>Template Name</label>
+      <input type="text" id="templateName" placeholder="My awesome template">
+    </div>
+    <div class="btn-group" style="justify-content:flex-end">
+      <button class="btn btn-secondary" onclick="closeModal('templateModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSaveTemplate()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="customEmojiModal">
+  <div class="modal">
+    <h3>Insert Custom Emoji</h3>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
+      Discord custom emojis use the format <code style="background:var(--bg-input);padding:1px 4px;border-radius:3px">:name:id</code>.<br>
+      For animated emojis, it's <code style="background:var(--bg-input);padding:1px 4px;border-radius:3px">a:name:id</code>.
+      <br><br>
+      <strong>Tip:</strong> Right-click an emoji in Discord chat and copy its link, or type <code style="background:var(--bg-input);padding:1px 4px;border-radius:3px">\:emojiname:</code> in Discord to get the raw format.
+    </div>
+    <div class="field">
+      <label>Emoji Name (without colons)</label>
+      <input type="text" id="customEmojiName" placeholder="e.g. pepe, blobcat">
+    </div>
+    <div class="field">
+      <label>Emoji ID (numeric)</label>
+      <input type="text" id="customEmojiId" placeholder="e.g. 123456789012345678">
+    </div>
+    <div class="toggle-row">
+      <label class="toggle" style="margin:0">
+        <input type="checkbox" id="customEmojiAnimated">
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Animated emoji</span>
+    </div>
+    <div style="background:var(--bg-secondary);border-radius:6px;padding:10px;margin-top:8px;font-size:13px">
+      <label>Preview format:</label>
+      <div id="customEmojiPreview" style="color:var(--accent);font-family:monospace;margin-top:4px">:<span id="cepName">name</span><span id="cepId"></span>:</div>
+    </div>
+    <div class="btn-group" style="justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-secondary" onclick="closeModal('customEmojiModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="insertCustomEmoji()">Insert</button>
+    </div>
+  </div>
+</div>
+
+<div class="emoji-picker" id="emojiPicker">
+  <div class="ep-header">
+    <input type="text" id="emojiSearch" placeholder="Search emoji..." oninput="filterEmojis()">
+  </div>
+  <div class="ep-tabs" id="emojiTabs"></div>
+  <div class="ep-grid" id="emojiGrid"></div>
+  <div style="padding:8px;border-top:1px solid var(--border)">
+    <button class="btn btn-xs btn-secondary btn-block" onclick="openCustomEmojiModal()" style="font-size:12px">
+      Custom Emoji (:name:id)
+    </button>
+  </div>
+</div>
+
+<script>
+const EMOJI_DATA={
+  'Smileys':[['😀','Grinning'],['😃','Smiley'],['😄','Smile'],['😁','Grin'],['😆','Laughing'],['😅','Sweat Smile'],['🤣','ROFL'],['😂','Joy'],['🙂','Slight Smile'],['😉','Wink'],['😊','Blush'],['😇','Innocent'],['🥰','Smiling Hearts'],['😍','Heart Eyes'],['🤩','Star Eyes'],['😘','Kissing Heart'],['😗','Kissing'],['😚','Kissing Closed'],['😙','Kissing Smiling'],['🥲','Smiling Tear'],['😋','Yum'],['😛','Tongue'],['😜','Wink Tongue'],['🤪','Zany'],['😝','Squint Tongue'],['🤑','Money Mouth'],['🤗','Hug'],['🤭','Hand Over Mouth'],['🤫','Shushing'],['🤔','Thinking'],['🫡','Salute'],['🤐','Zipper Mouth'],['🤨','Raised Eyebrow'],['😐','Neutral'],['😑','Expressionless'],['😶','No Mouth'],['😏','Smirk'],['😒','Unamused'],['🙄','Eye Roll'],['😬','Grimacing'],['🤥','Lying'],['😌','Relieved'],['😔','Pensive'],['😪','Sleepy'],['🤤','Drool'],['😴','Sleeping'],['😷','Mask'],['🤒','Thermometer'],['🤕','Bandage'],['🤢','Nauseated'],['🤮','Vomiting'],['🥵','Hot'],['🥶','Cold'],['😎','Sunglasses'],['🥸','Disguised'],['🤓','Nerd'],['🧐','Monocle']],
+  'Gestures':[['👋','Wave'],['🤚','Raised Hand'],['✋','Stop'],['🖖','Vulcan'],['🫱','Rightwards'],['🫲','Leftwards'],['👌','OK'],['🤌','Pinched'],['✌️','Peace'],['🤞','Crossed Fingers'],['🫰','Hand with Index'],['🤟','Love'],['🤘','Horns'],['🤙','Call'],['👈','Left'],['👉','Right'],['👆','Up'],['👇','Down'],['☝️','Index Up'],['👍','Thumbs Up'],['👎','Thumbs Down'],['✊','Fist'],['👊','Punch'],['🤛','Left Fist'],['🤜','Right Fist'],['👏','Clap'],['🙌','Hooray'],['🫶','Heart Hands'],['👐','Open Hands'],['🤲','Palms Up'],['🤝','Handshake'],['🙏','Pray'],['✍️','Writing'],['💪','Flex'],['🦾','Mechanical Arm'],['🦿','Mechanical Leg'],['🦵','Leg'],['🦶','Foot'],['🖕','Middle Finger'],['🗣️','Speaking']],
+  'Hearts & Symbols':[['❤️','Red Heart'],['🧡','Orange Heart'],['💛','Yellow Heart'],['💚','Green Heart'],['💙','Blue Heart'],['💜','Purple Heart'],['🖤','Black Heart'],['🤍','White Heart'],['🤎','Brown Heart'],['💔','Broken Heart'],['❣️','Exclamation'],['💕','Two Hearts'],['💞','Revolving'],['💓','Heartbeat'],['💗','Growing'],['💖','Sparkling'],['💘','Cupid'],['💝','Gift Heart'],['💟','Heart Decoration'],['⭐','Star'],['🌟','Glowing Star'],['✨','Sparkles'],['💫','Dizzy'],['🔥','Fire'],['💯','Hundred'],['💢','Anger'],['💥','Collision'],['❓','Question'],['❗','Exclamation'],['⚠️','Warning'],['♻️','Recycle'],['💤','Sleep'],['💢','Anger'],['🕹️','Joystick'],['🎮','Game Controller'],['🎲','Die'],['🎯','Direct Hit'],['🏆','Trophy'],['🥇','Gold Medal'],['🥈','Silver Medal'],['🥉','Bronze Medal'],['⚽','Soccer'],['🏀','Basketball'],['🏈','Football'],['⚾','Baseball'],['🥎','Softball'],['🎾','Tennis'],['🏐','Volleyball']],
+  'Objects & Misc':[['💻','Laptop'],['🖥️','Desktop'],['📱','Phone'],['⌚','Watch'],['📷','Camera'],['🎥','Movie'],['🎬','Clapper'],['🎤','Microphone'],['🎧','Headphones'],['🎵','Note'],['🎶','Notes'],['🎸','Guitar'],['🎹','Keys'],['🥁','Drum'],['🔔','Bell'],['🔕','No Bell'],['📢','Loudspeaker'],['📣','Megaphone'],[' locked','Lock'],['🔓','Unlock'],['🔒','Lock'],['💌','Love Letter'],['📧','Email'],['💬','Speech'],['💭','Thought',['💍','Ring'],['💎','Gem'],[' gift','Gift'],['🎁','Present'],['🏷️','Label'],['🔖','Bookmark'],['📚','Books'],['📖','Book'],['✏️','Pencil'],['🖊️','Pen'],['📝','Memo'],['💼','Briefcase'],['📁','Folder'],['📂','Open Folder'],['🗂️','Card Index'],['📅','Calendar'],['🗓️','Spiral Calendar'],['📌','Pushpin'],['📍','Round Pushpin'],['✂️','Scissors'],['📏','Ruler'],['🧲','Magnet'],['🔧','Wrench'],['🔨','Hammer'],['⛏️','Pick'],['🔩','Nut and Bolt'],['⚙️','Gear'],['⚖️','Scale'],['🔗','Link'],['⛓️','Chains']]],
+  'Animals':[['🐶','Dog'],['🐱','Cat'],['🐭','Mouse'],['🐹','Hamster'],['🐰','Rabbit'],['🦊','Fox'],['🐻','Bear'],['🐼','Panda'],['🐨','Koala'],['🐯','Tiger'],['🦁','Lion'],['🐮','Cow'],['🐷','Pig'],['🐸','Frog'],['🐵','Monkey'],['🐔','Chicken'],['🐧','Penguin'],['🐦','Bird'],['🦅','Eagle'],['🦆','Duck'],['🦉','Owl'],['🦇','Bat'],['🐺','Wolf'],['🐗','Boar'],['🐴','Horse'],['🦄','Unicorn'],['🐝','Bee'],['🪱','Worm'],['🐛','Bug'],['🦋','Butterfly'],['🐌','Snail'],['🪲','Beetle'],['🐜','Ant'],['🐞','Ladybug'],['🦗','Cricket'],['🪳','Cockroach'],['🕷️','Spider'],['🦂','Scorpion'],['🦀','Crab'],['🦞','Lobster'],['🦐','Shrimp'],['🐙','Octopus'],['🦑','Squid']],
+  'Food':['🍕','🍔','🍟','🌭','🥪','🌮','🌯','🥙','🧆','🥘','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦀','🦞','🦐','🍙','🍘','🍚','🍛','🥠','🥮','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🧇','🥞','🧀','🥚','🍳','🥞','🥓','🥩','🍗','🍖','🦴','🌮','🌯','🥙','🧆','🥗','🥘','🫕','🥫','🍿','🧈','🧂','🥫','🫔','🫓'].map(e=>[e,e]),
+  'Flags & Hands':['🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏴‍☠️','✋🏻','✋🏼','✋🏽','✋🏾','✋🏿','🖐🏻','🖐🏼','🖐🏽','🖐🏾','🖐🏿','👌🏻','👌🏼','👌🏽','👌🏾','👌🏿','👍🏻','👍🏼','👍🏽','👍🏾','👍🏿','👎🏻','👎🏼','👎🏽','👎🏾','👎🏿','✊🏻','✊🏼','✊🏽','✊🏾','✊🏿','👋🏻','👋🏼','👋🏽','👋🏾','👋🏿'].map(e=>[e,e])
+};
+
+let _emojiTarget=null;
+let _emojiBtnTarget=null;
+let _emojiCategory='Smileys';
+
+function buildEmojiTabs(){
+  const tabs=$('emojiTabs');
+  tabs.innerHTML='';
+  Object.keys(EMOJI_DATA).forEach((cat,i)=>{
+    const t=document.createElement('div');
+    t.className='ep-tab'+(i===0?' active':'');
+    t.textContent=cat;
+    t.onclick=()=>{_emojiCategory=cat;document.querySelectorAll('.ep-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');renderEmojiGrid();};
+    tabs.appendChild(t);
+  });
+}
+
+function renderEmojiGrid(search=''){
+  const grid=$('emojiGrid');
+  const emojis=EMOJI_DATA[_emojiCategory]||[];
+  const filtered=search?emojis.filter(e=>e[1].toLowerCase().includes(search.toLowerCase())):emojis;
+  grid.innerHTML=filtered.map(e=>`<span title="${e[1]}" onclick="insertEmoji('${e[0]}')">${e[0]}</span>`).join('');
+}
+
+function filterEmojis(){
+  renderEmojiGrid($('emojiSearch').value);
+}
+
+function openEmojiPicker(e,target,btnTarget){
+  _emojiTarget=target;
+  _emojiBtnTarget=btnTarget||null;
+  const picker=$('emojiPicker');
+  const rect=e.currentTarget.getBoundingClientRect();
+  picker.style.top=(rect.bottom+4)+'px';
+  picker.style.left=Math.min(rect.left,window.innerWidth-330)+'px';
+  picker.classList.add('open');
+  $('emojiSearch').value='';
+  buildEmojiTabs();
+  renderEmojiGrid();
+  setTimeout(()=>$('emojiSearch').focus(),50);
+}
+
+function openBtnEmojiPicker(e,rowIdx,btnIdx){
+  openEmojiPicker(e,null,{row:rowIdx,btn:btnIdx});
+}
+
+function insertEmoji(emoji){
+  if(_emojiBtnTarget){
+    setButtonEmoji(_emojiBtnTarget.row,_emojiBtnTarget.btn,emoji);
+    closeEmojiPicker();
+    return;
+  }
+  if(_emojiTarget){
+    const el=$(_emojiTarget);
+    const start=el.selectionStart;
+    const end=el.selectionEnd;
+    const val=el.value;
+    el.value=val.substring(0,start)+emoji+val.substring(end);
+    el.selectionStart=el.selectionEnd=start+emoji.length;
+    el.focus();
+    el.dispatchEvent(new Event('input'));
+  }
+  closeEmojiPicker();
+}
+
+function setButtonEmoji(rowIdx,btnIdx,emoji){
+  window._actionButtons[rowIdx][btnIdx].emoji=emoji;
+  renderActionButtons();
+  updatePreview();
+}
+
+function closeEmojiPicker(){
+  $('emojiPicker').classList.remove('open');
+}
+
+function openCustomEmojiModal(){
+  closeEmojiPicker();
+  $('customEmojiName').value='';
+  $('customEmojiId').value='';
+  $('customEmojiAnimated').checked=false;
+  updateCustomEmojiPreview();
+  $('customEmojiModal').classList.add('open');
+}
+
+function updateCustomEmojiPreview(){
+  const name=$('customEmojiName').value||'name';
+  const id=$('customEmojiId').value;
+  const animated=$('customEmojiAnimated').checked;
+  const prefix=animated?'a:':':';
+  $('cepName').textContent=name;
+  $('cepId').textContent=id?':'+id:'';
+  $('cepName').parentElement.parentElement.style.display='';
+}
+
+$('customEmojiName')&&$('customEmojiName').addEventListener('input',updateCustomEmojiPreview);
+$('customEmojiId')&&$('customEmojiId').addEventListener('input',updateCustomEmojiPreview);
+$('customEmojiAnimated')&&$('customEmojiAnimated').addEventListener('change',updateCustomEmojiPreview);
+
+function insertCustomEmoji(){
+  const name=$('customEmojiName').value.trim();
+  const id=$('customEmojiId').value.trim();
+  const animated=$('customEmojiAnimated').checked;
+  if(!name){showToast('Enter an emoji name','error');return;}
+  let emoji;
+  if(id){
+    emoji=animated?`a:${name}:${id}`:`:${name}:${id}`;
+  }else{
+    emoji=`:${name}:`;
+  }
+  closeModal('customEmojiModal');
+  if(_emojiBtnTarget){
+    setButtonEmoji(_emojiBtnTarget.row,_emojiBtnTarget.btn,emoji);
+  }else if(_emojiTarget){
+    const el=$(_emojiTarget);
+    const start=el.selectionStart;
+    const end=el.selectionEnd;
+    el.value=el.value.substring(0,start)+emoji+el.value.substring(end);
+    el.selectionStart=el.selectionEnd=start+emoji.length;
+    el.focus();
+    el.dispatchEvent(new Event('input'));
+  }
+}
+
+document.addEventListener('click',e=>{
+  if(!$('emojiPicker').contains(e.target)&&!e.target.closest('.btn-xs[onclick*="openEmojiPicker"]')&&!e.target.closest('.btn-emoji-display')){
+    closeEmojiPicker();
+  }
+});
+
+const LS={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},
+  set(k,v){localStorage.setItem(k,JSON.stringify(v))}
+};
+
+const KEYS={
+  formState:'dws_formState',
+  webhooks:'dws_webhooks',
+  history:'dws_history',
+  templates:'dws_templates',
+  activeWebhook:'dws_activeWebhook'
+};
+
+function $(id){return document.getElementById(id)}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  if(tab==='history')renderHistory();
+  if(tab==='templates')renderTemplates();
+  if(tab==='webhooks')renderWebhooks();
+}
+
+function toggleCollapse(el){
+  el.classList.toggle('open');
+  const body=el.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function toggleEmbed(){
+  const on=$('embedToggle').checked;
+  const body=$('embedBody');
+  const header=$('embedToggle').closest('.panel').querySelector('.collapsible-header');
+  if(on){body.classList.add('open');header.classList.add('open')}
+  else{body.classList.remove('open');header.classList.remove('open')}
+  updatePreview();
+}
+
+function syncColor(from){
+  if(from==='picker'){$('embedColor').value=$('embedColorPicker').value}
+  else{if(/^#[0-9a-fA-F]{6}$/.test($('embedColor').value))$('embedColorPicker').value=$('embedColor').value}
+  updatePreview();
+}
+
+function addEmbedField(){
+  const c=$('embedFieldsContainer');
+  const row=document.createElement('div');
+  row.className='embed-field-row';
+  row.innerHTML=`
+    <div class="field"><label>Name</label><input type="text" class="ef-name" placeholder="Field name"></div>
+    <div class="field"><label>Value</label><input type="text" class="ef-value" placeholder="Field value"></div>
+    <div style="display:flex;align-items:center;gap:4px;padding-bottom:4px">
+      <label class="toggle" style="margin:0"><input type="checkbox" class="ef-inline"><span class="slider"></span></label>
+      <button class="btn btn-xs btn-danger" onclick="this.closest('.embed-field-row').remove();updatePreview()" title="Remove">X</button>
+    </div>`;
+  c.appendChild(row);
+  row.querySelectorAll('input').forEach(i=>i.addEventListener('input',updatePreview));
+  updatePreview();
+}
+
+function getEmbedFields(){
+  return Array.from($('embedFieldsContainer').querySelectorAll('.embed-field-row')).map(row=>({
+    name:row.querySelector('.ef-name').value,
+    value:row.querySelector('.ef-value').value,
+    inline:row.querySelector('.ef-inline').checked
+  })).filter(f=>f.name||f.value);
+}
+
+window._actionButtons=[[]];
+
+function addActionButton(){
+  const row=window._actionButtons;
+  if(row.length===0)row.push([]);
+  if(row[0].length>=5){showToast('Maximum 5 buttons per row','error');return;}
+  row[0].push({label:'Button',style:5,url:'',emoji:'',customId:'',disabled:false});
+  renderActionButtons();
+  updatePreview();
+}
+
+function removeActionButton(btnIdx){
+  window._actionButtons[0].splice(btnIdx,1);
+  if(window._actionButtons[0].length===0&&window._actionButtons.length===1){/* keep empty row */}
+  renderActionButtons();
+  updatePreview();
+}
+
+function updateActionButton(rowIdx,btnIdx,key,value){
+  window._actionButtons[rowIdx][btnIdx][key]=value;
+  if(key==='style'){
+    if(value===5)window._actionButtons[rowIdx][btnIdx].customId='';
+    else window._actionButtons[rowIdx][btnIdx].url='';
+  }
+  updatePreview();
+}
+
+function renderActionButtons(){
+  const c=$('actionRowsContainer');
+  const btns=window._actionButtons[0]||[];
+  if(!btns.length){c.innerHTML='<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:8px">No buttons added yet</div>';return;}
+  let html='';
+  btns.forEach((btn,i)=>{
+    const isLink=btn.style===5;
+    const isDisabled=btn.disabled;
+    html+=`<div class="btn-item">
+      <select style="width:100px" onchange="updateActionButton(0,${i},'style',parseInt(this.value))">
+        <option value="5"${isLink?' selected':''}>Link</option>
+        <option value="1"${btn.style===1?' selected':''}>Primary</option>
+        <option value="2"${btn.style===2?' selected':''}>Secondary</option>
+        <option value="3"${btn.style===3?' selected':''}>Success</option>
+        <option value="4"${btn.style===4?' selected':''}>Danger</option>
+      </select>
+      ${!isLink?'<span style="color:var(--warning);font-size:11px;white-space:nowrap">&#x26A0; Not supported</span>':''}
+      <label class="toggle" style="margin:0;flex-shrink:0" title="Disabled">
+        <input type="checkbox" ${isDisabled?'checked':''} onchange="updateActionButton(0,${i},'disabled',this.checked)">
+        <span class="slider"></span>
+      </label>
+      <div class="btn-emoji-display" onclick="openBtnEmojiPicker(event,0,${i})" title="Click to set emoji">${btn.emoji||'😀'}</div>
+      <input type="text" value="${esc(btn.label)}" placeholder="Label" oninput="updateActionButton(0,${i},'label',this.value)" style="${!isLink?'width:80px':'width:120px'}">
+      ${isLink?`<input type="url" value="${esc(btn.url)}" placeholder="URL" oninput="updateActionButton(0,${i},'url',this.value)" style="width:180px">`
+        :`<input type="text" value="${esc(btn.customId||'')}" placeholder="Custom ID" oninput="updateActionButton(0,${i},'customId',this.value)" style="width:120px">`}
+      <button class="btn btn-xs btn-danger" onclick="removeActionButton(${i})">X</button>
+    </div>`;
+  });
+  c.innerHTML=html;
+}
+
+function getActionRows(){
+  if(!window._actionButtons[0]||!window._actionButtons[0].length)return[];
+  const components=[];
+  const row={type:1,components:[]};
+  window._actionButtons[0].forEach(btn=>{
+    const comp={type:2,label:btn.label||'Button',style:btn.style};
+    if(btn.emoji)comp.emoji=parseEmojiForApi(btn.emoji);
+    if(btn.style===5&&btn.url)comp.url=btn.url;
+    if(btn.style!==5&&btn.customId)comp.custom_id=btn.customId;
+    if(btn.disabled)comp.disabled=true;
+    row.components.push(comp);
+  });
+  if(row.components.length)components.push(row);
+  return components;
+}
+
+function parseEmojiForApi(emoji){
+  const customMatch=emoji.match(/^a?:(.+):(\d+)$/);
+  if(customMatch){
+    return{name:customMatch[1],id:customMatch[2],animated:emoji.startsWith('a:')};
+  }
+  const colonMatch=emoji.match(/^:([^:]+):$/);
+  if(colonMatch&&colonMatch[1]&&!/^\d+$/.test(colonMatch[1])){
+    return{name:colonMatch[1],id:null,animated:false};
+  }
+  return{name:emoji,id:null,animated:false};
+}
+
+function isCustomEmoji(str){
+  return/^a?:.+:/.test(str)||/^<a?:.+:d+>$/.test(str);
+}
+
+function handleFileSelect(e){
+  const file=e.target.files[0];
+  if(file)showFile(file);
+}
+
+function showFile(file){
+  $('fileName').textContent=file.name+' ('+(file.size/1024/1024).toFixed(2)+' MB)';
+  $('fileDrop').querySelector('p').textContent='File selected:';
+  window._attachedFile=file;
+}
+
+$('fileDrop').addEventListener('dragover',e=>{e.preventDefault();$('fileDrop').classList.add('dragover')});
+$('fileDrop').addEventListener('dragleave',()=>$('fileDrop').classList.remove('dragover'));
+$('fileDrop').addEventListener('drop',e=>{
+  e.preventDefault();$('fileDrop').classList.remove('dragover');
+  if(e.dataTransfer.files[0])showFile(e.dataTransfer.files[0]);
+});
+
+function getFormState(){
+  return{
+    webhook:$('webhook').value,
+    username:$('username').value,
+    avatarUrl:$('avatarUrl').value,
+    content:$('content').value,
+    tts:$('ttsToggle').checked,
+    messageId:$('messageId').value,
+    embedEnabled:$('embedToggle').checked,
+    embedAuthorName:$('embedAuthorName').value,
+    embedAuthorIcon:$('embedAuthorIcon').value,
+    embedAuthorUrl:$('embedAuthorUrl').value,
+    embedTitle:$('embedTitle').value,
+    embedUrl:$('embedUrl').value,
+    embedDesc:$('embedDesc').value,
+    embedThumbnail:$('embedThumbnail').value,
+    embedImage:$('embedImage').value,
+    embedColor:$('embedColor').value,
+    embedFooterText:$('embedFooterText').value,
+    embedFooterIcon:$('embedFooterIcon').value,
+    embedTimestamp:$('embedTimestamp').checked,
+    embedFields:getEmbedFields(),
+    actionButtons:JSON.parse(JSON.stringify(window._actionButtons)),
+    buttonsExpanded:$('buttonsBody').classList.contains('open')
+  };
+}
+
+function setFormState(s){
+  if(!s)return;
+  $('webhook').value=s.webhook||'';
+  $('username').value=s.username||'';
+  $('avatarUrl').value=s.avatarUrl||'';
+  $('content').value=s.content||'';
+  $('ttsToggle').checked=s.tts||false;
+  $('messageId').value=s.messageId||'';
+  $('embedToggle').checked=s.embedEnabled||false;
+  $('embedAuthorName').value=s.embedAuthorName||'';
+  $('embedAuthorIcon').value=s.embedAuthorIcon||'';
+  $('embedAuthorUrl').value=s.embedAuthorUrl||'';
+  $('embedTitle').value=s.embedTitle||'';
+  $('embedUrl').value=s.embedUrl||'';
+  $('embedDesc').value=s.embedDesc||'';
+  $('embedThumbnail').value=s.embedThumbnail||'';
+  $('embedImage').value=s.embedImage||'';
+  $('embedColor').value=s.embedColor||'#5865f2';
+  $('embedColorPicker').value=s.embedColor||'#5865f2';
+  $('embedFooterText').value=s.embedFooterText||'';
+  $('embedFooterIcon').value=s.embedFooterIcon||'';
+  $('embedTimestamp').checked=s.embedTimestamp!==undefined?s.embedTimestamp:true;
+  if(s.embedEnabled)toggleEmbed();
+  const c=$('embedFieldsContainer');
+  c.innerHTML='';
+  (s.embedFields||[]).forEach(f=>{
+    addEmbedField();
+    const row=c.lastElementChild;
+    row.querySelector('.ef-name').value=f.name||'';
+    row.querySelector('.ef-value').value=f.value||'';
+    row.querySelector('.ef-inline').checked=f.inline||false;
+  });
+  window._actionButtons=s.actionButtons?[JSON.parse(JSON.stringify(s.actionButtons))]:[[]];
+  if(!window._actionButtons[0])window._actionButtons=[[]];
+  renderActionButtons();
+  if(s.buttonsExpanded){
+    const btnPanel=$('buttonsBody').closest('.panel');
+    btnPanel.querySelector('.collapsible-header').classList.add('open');
+    $('buttonsBody').classList.add('open');
+  }
+  validateWebhook();
+  updatePreview();
+}
+
+function saveFormState(){LS.set(KEYS.formState,getFormState())}
+function restoreFormState(){setFormState(LS.get(KEYS.formState,null))}
+
+let _previewTimer;
+function schedulePreview(){clearTimeout(_previewTimer);_previewTimer=setTimeout(updatePreview,100)}
+
+function renderBtnStyle(style){
+  const map={1:'Primary',2:'Secondary',3:'Success',4:'Danger',5:'Link'};
+  return map[style]||'Primary';
+}
+
+function getBtnClass(style){
+  const map={1:'link-btn',2:'secondary-btn',3:'success-btn',4:'danger-btn',5:'link-btn'};
+  return map[style]||'link-btn';
+}
+
+function getEmojiDisplay(emoji){
+  if(!emoji)return'';
+  if(/^a?:[^:]+:\d+$/.test(emoji)){
+    const m=emoji.match(/^a?:([^:]+):(\d+)$/);
+    return `<img src="https://cdn.discordapp.com/emojis/${m[2]}.png" style="width:16px;height:16px;vertical-align:middle" onerror="this.textContent='${emoji}'">`;
+  }
+  if(/^:[^:]+:$/.test(emoji))return emoji;
+  return emoji;
+}
+
+function updatePreview(){
+  const content=$('content').value;
+  const username=$('username').value;
+  const showEmbed=$('embedToggle').checked;
+  const eTitle=$('embedTitle').value;
+  const eDesc=$('embedDesc').value;
+  const eAuthor=$('embedAuthorName').value;
+  const eAuthorIcon=$('embedAuthorIcon').value;
+  const eThumbnail=$('embedThumbnail').value;
+  const eImage=$('embedImage').value;
+  const eFooterText=$('embedFooterText').value;
+  const eFooterIcon=$('embedFooterIcon').value;
+  const eColor=$('embedColor').value||'#5865f2';
+  const eTimestamp=$('embedTimestamp').checked;
+  const fields=getEmbedFields();
+  const btns=(window._actionButtons[0]||[]);
+
+  if(!content&&!showEmbed&&!btns.length){
+    $('preview').innerHTML='<div class="preview-card"><div class="empty-state"><p>Your message preview will appear here</p></div></div>';
+    return;
+  }
+
+  let html='<div class="preview-card">';
+  if(content||username){
+    if(username)html+=`<div class="preview-username">${esc(username)}</div>`;
+    if(content)html+=`<div class="preview-content">${esc(content)}</div>`;
+  }
+
+  if(showEmbed&&(eTitle||eDesc||eAuthor||fields.length||eImage||eThumbnail||eFooterText)){
+    html+=`<div class="embed-preview" style="border-left-color:${esc(eColor)}">`;
+    if(eThumbnail)html+=`<img class="embed-thumb" src="${esc(eThumbnail)}" onerror="this.style.display='none'">`;
+    if(eAuthor){
+      html+='<div class="embed-author">';
+      if(eAuthorIcon)html+=`<img src="${esc(eAuthorIcon)}" onerror="this.style.display='none'">`;
+      html+=esc(eAuthor)+'</div>';
+    }
+    if(eTitle){
+      const eUrl=$('embedUrl').value;
+      if(eUrl)html+=`<div class="embed-title"><a href="${esc(eUrl)}" target="_blank" style="color:var(--accent)">${esc(eTitle)}</a></div>`;
+      else html+=`<div class="embed-title">${esc(eTitle)}</div>`;
+    }
+    if(eDesc)html+=`<div class="embed-desc">${esc(eDesc)}</div>`;
+    if(fields.length){
+      html+='<div style="margin-top:8px">';
+      fields.forEach(f=>{
+        if(!f.name&&!f.value)return;
+        const cls=f.inline?' embed-field inline':' embed-field';
+        html+=`<div class="${cls}"><div class="embed-field-name">${esc(f.name||'\u200b')}</div><div class="embed-field-value">${esc(f.value||'\u200b')}</div></div>`;
+      });
+      html+='</div>';
+    }
+    if(eImage)html+=`<img class="embed-image" src="${esc(eImage)}" onerror="this.style.display='none'">`;
+    html+='<div style="clear:both"></div>';
+    if(eFooterText||eTimestamp){
+      html+='<div class="embed-footer">';
+      if(eFooterIcon)html+=`<img src="${esc(eFooterIcon)}" onerror="this.style.display='none'">`;
+      if(eFooterText)html+=esc(eFooterText);
+      if(eTimestamp)html+=(eFooterText?' \u2022 ':'')+new Date().toLocaleString();
+      html+='</div>';
+    }
+    html+='</div>';
+  }
+
+  if(btns.length){
+    html+='<div class="preview-actions"><div class="action-row-preview">';
+    btns.forEach(btn=>{
+      const cls=getBtnClass(btn.style);
+      const disabledCls=btn.disabled?' disabled-btn':'';
+      const emojiHtml=btn.emoji?`<span class="btn-emoji">${getEmojiDisplay(btn.emoji)}</span> `:'';
+      html+=`<span class="action-btn-preview ${cls}${disabledCls}">${emojiHtml}${esc(btn.label||'Button')}</span>`;
+    });
+    html+='</div></div>';
+  }
+
+  html+='</div>';
+  $('preview').innerHTML=html;
+
+  $('contentCount').textContent=`${content.length} / 2000`;
+  $('contentCount').className='char-count'+(content.length>2000?' over':content.length>1800?' warn':'');
+  $('embedDescCount').textContent=`${$('embedDesc').value.length} / 4096`;
+  $('embedDescCount').className='char-count'+($('embedDesc').value.length>4096?' over':$('embedDesc').value.length>3800?' warn':'');
+
+  saveFormState();
+}
+
+function validateWebhook(){
+  const url=$('webhook').value.trim();
+  const s=$('webhookStatus');
+  if(!url){s.textContent='';s.className='char-count';return;}
+  if(/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(url)){
+    s.textContent='Valid webhook URL';s.className='char-count';s.style.color='var(--success)';
+  }else{
+    s.textContent='Invalid webhook URL format';s.className='char-count';s.style.color='var(--error)';
+  }
+}
+
+function buildPayload(){
+  const p={};
+  const content=$('content').value.trim();
+  const username=$('username').value.trim();
+  const avatarUrl=$('avatarUrl').value.trim();
+  const tts=$('ttsToggle').checked;
+
+  if(username)p.username=username;
+  if(avatarUrl)p.avatar_url=avatarUrl;
+  if(content)p.content=content;
+  if(tts)p.tts=true;
+
+  if($('embedToggle').checked){
+    const embed={};
+    const t=$('embedTitle').value.trim();
+    const d=$('embedDesc').value.trim();
+    const url=$('embedUrl').value.trim();
+    const color=$('embedColor').value.trim();
+    const an=$('embedAuthorName').value.trim();
+    const ai=$('embedAuthorIcon').value.trim();
+    const au=$('embedAuthorUrl').value.trim();
+    const thumb=$('embedThumbnail').value.trim();
+    const img=$('embedImage').value.trim();
+    const ft=$('embedFooterText').value.trim();
+    const fi=$('embedFooterIcon').value.trim();
+    const ts=$('embedTimestamp').checked;
+    const fields=getEmbedFields();
+
+    if(an){embed.author={name:an};if(ai)embed.author.icon_url=ai;if(au)embed.author.url=au}
+    if(t){embed.title=t;if(url)embed.url=url}
+    if(d)embed.description=d;
+    if(color)embed.color=parseInt(color.replace('#',''),16);
+    if(thumb)embed.thumbnail={url:thumb};
+    if(img)embed.image={url:img};
+    if(ft){embed.footer={text:ft};if(fi)embed.footer.icon_url=fi}
+    if(ts)embed.timestamp=new Date().toISOString();
+    if(fields.length)embed.fields=fields.filter(f=>f.name||f.value).map(f=>({name:f.name||'\u200b',value:f.value||'\u200b',inline:f.inline}));
+
+    if(Object.keys(embed).length)p.embeds=[embed];
+  }
+
+  const components=getActionRows();
+  if(components.length)p.components=components;
+
+  return p;
+}
+
+async function sendMessage(){
+  const url=$('webhook').value.trim();
+  if(!url){showToast('Please enter a webhook URL','error');return;}
+
+  const isEdit=$('messageId').value.trim()!=='';
+  const payload=buildPayload();
+
+  if(!payload.content&&!payload.embeds&&!payload.components&&!window._attachedFile){
+    showToast('Message cannot be empty','error');return;
+  }
+
+  if(payload.components){
+    const hasNonLink=payload.components.some(row=>row.components.some(c=>c.style!==5));
+    if(hasNonLink){
+      if(!confirm('Non-link buttons (Primary, Secondary, Success, Danger) are NOT supported by Discord webhooks and will cause the API to reject the message.\n\nOnly Link buttons work with webhooks. Do you want to send anyway?'))return;
+    }
+  }
+
+  const btn=$('sendBtn');
+  btn.disabled=true;
+  const origHTML=btn.innerHTML;
+  btn.innerHTML='<span class="spinner"></span> Sending...';
+
+  try{
+    let res;
+    if(window._attachedFile){
+      const fd=new FormData();
+      fd.append('payload_json',JSON.stringify(payload));
+      fd.append('file',window._attachedFile);
+      const endpoint=isEdit?`${url}/messages/${$('messageId').value.trim()}`:url;
+      res=await fetch(endpoint,{method:isEdit?'PATCH':'POST',body:fd});
+    }else{
+      const endpoint=isEdit?`${url}/messages/${$('messageId').value.trim()}`:url;
+      res=await fetch(endpoint,{
+        method:isEdit?'PATCH':'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+    }
+
+    if(res.status===204||(res.status>=200&&res.status<300)){
+      showToast(isEdit?'Message updated!':'Message sent!','success');
+      let msgId=$('messageId').value.trim();
+      try{const data=await res.json();if(data&&data.id)msgId=data.id}catch{}
+      addHistory({url,payload,messageId:msgId,type:isEdit?'edit':'send',timestamp:new Date().toISOString()});
+      if(!isEdit&&msgId)LS.set('dws_lastMessageId',msgId);
+    }else{
+      const text=await res.text().catch(()=>'');
+      showToast(`Failed: ${res.status} ${text||res.statusText}`,'error');
+    }
+  }catch(err){
+    showToast(`Error: ${err.message}`,'error');
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML=origHTML;
+  }
+}
+
+async function deleteMessage(){
+  const url=$('webhook').value.trim();
+  const msgId=$('messageId').value.trim();
+  if(!url){showToast('Enter a webhook URL','error');return;}
+  if(!msgId){showToast('Enter a message ID to delete','error');return;}
+  try{
+    const res=await fetch(`${url}/messages/${msgId}`,{method:'DELETE'});
+    if(res.status===204||res.ok){showToast('Message deleted!','success');$('messageId').value='';saveFormState();}
+    else showToast('Failed to delete message','error');
+  }catch(err){showToast(`Error: ${err.message}`,'error')}
+}
+
+function loadLastMessageId(){
+  const last=LS.get('dws_lastMessageId','');
+  if(last)$('messageId').value=last;
+  else showToast('No previous message ID found','error');
+}
+
+function addHistory(entry){
+  const h=LS.get(KEYS.history,[]);
+  h.unshift(entry);
+  if(h.length>50)h.length=50;
+  LS.set(KEYS.history,h);
+}
+
+function renderHistory(){
+  const h=LS.get(KEYS.history,[]);
+  const el=$('historyList');
+  if(!h.length){el.innerHTML='<div class="empty-state"><p>No messages sent yet</p></div>';return;}
+  el.innerHTML=h.map((item,i)=>{
+    const d=new Date(item.timestamp);
+    const typeLabel=item.type==='edit'?'(edited)':'(sent)';
+    const content=item.payload.content||(item.payload.embeds&&item.payload.embeds[0]&&item.payload.embeds[0].title)||'Embed only';
+    const hasBtns=item.payload.components&&item.payload.components.length;
+    const msgId=item.messageId||'';
+    return `<div class="history-item">
+      <div class="meta">
+        <span style="font-size:11px;color:var(--text-muted)">${esc(d.toLocaleString())} ${typeLabel}</span>
+        ${msgId?`<span style="font-size:11px;color:var(--accent)">ID: ${esc(msgId)}</span>`:''}
+      </div>
+      <div class="msg-body">${esc(content.substring(0,200))}${hasBtns?' <span style="color:var(--accent);font-size:11px">[buttons]</span>':''}</div>
+      <div class="msg-actions">
+        <button class="btn btn-xs btn-secondary" onclick="loadHistoryItem(${i})">Load</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteHistoryItem(${i})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadHistoryItem(i){
+  const h=LS.get(KEYS.history,[]);
+  const item=h[i];
+  if(!item)return;
+  $('webhook').value=item.url||'';
+  $('messageId').value=item.messageId||'';
+  if(item.payload.username)$('username').value=item.payload.username;
+  if(item.payload.avatar_url)$('avatarUrl').value=item.payload.avatar_url;
+  if(item.payload.content)$('content').value=item.payload.content;
+  $('ttsToggle').checked=!!item.payload.tts;
+  if(item.payload.embeds&&item.payload.embeds[0]){
+    const e=item.payload.embeds[0];
+    $('embedToggle').checked=true;toggleEmbed();
+    $('embedAuthorName').value=e.author?.name||'';
+    $('embedAuthorIcon').value=e.author?.icon_url||'';
+    $('embedAuthorUrl').value=e.author?.url||'';
+    $('embedTitle').value=e.title||'';
+    $('embedUrl').value=e.url||'';
+    $('embedDesc').value=e.description||'';
+    $('embedThumbnail').value=e.thumbnail?.url||'';
+    $('embedImage').value=e.image?.url||'';
+    $('embedFooterText').value=e.footer?.text||'';
+    $('embedFooterIcon').value=e.footer?.icon_url||'';
+    $('embedTimestamp').checked=!!e.timestamp;
+    if(e.color!==undefined){const hex='#'+e.color.toString(16).padStart(6,'0');$('embedColor').value=hex;$('embedColorPicker').value=hex;}
+    $('embedFieldsContainer').innerHTML='';
+    (e.fields||[]).forEach(f=>{addEmbedField();const row=$('embedFieldsContainer').lastElementChild;row.querySelector('.ef-name').value=f.name==='\u200b'?'':f.name;row.querySelector('.ef-value').value=f.value==='\u200b'?'':f.value;row.querySelector('.ef-inline').checked=!!f.inline;});
+  }
+  if(item.payload.components&&item.payload.components[0]){
+    window._actionButtons=[item.payload.components[0].components.map(c=>({
+      label:c.label||'',
+      style:c.style,
+      url:c.url||'',
+      emoji:c.emoji?(c.emoji.id?`a:${c.emoji.name}:${c.emoji.id}`:`:${c.emoji.name}:`):'',
+      customId:c.custom_id||'',
+      disabled:!!c.disabled
+    }))];
+    renderActionButtons();
+    const btnPanel=$('buttonsBody').closest('.panel');
+    btnPanel.querySelector('.collapsible-header').classList.add('open');
+    $('buttonsBody').classList.add('open');
+  }
+  validateWebhook();updatePreview();switchTab('compose');showToast('Message loaded into composer','success');
+}
+
+function deleteHistoryItem(i){const h=LS.get(KEYS.history,[]);h.splice(i,1);LS.set(KEYS.history,h);renderHistory();}
+function clearHistory(){if(!confirm('Clear all message history?'))return;LS.set(KEYS.history,[]);renderHistory();}
+
+function saveAsTemplate(){$('templateName').value='';$('templateModal').classList.add('open');}
+function confirmSaveTemplate(){
+  const name=$('templateName').value.trim();
+  if(!name){showToast('Enter a template name','error');return;}
+  const templates=LS.get(KEYS.templates,[]);
+  templates.push({name,state:getFormState(),createdAt:new Date().toISOString()});
+  LS.set(KEYS.templates,templates);closeModal('templateModal');showToast('Template saved!','success');
+}
+
+function renderTemplates(){
+  const templates=LS.get(KEYS.templates,[]);
+  const el=$('templateList');
+  if(!templates.length){el.innerHTML='<div class="empty-state"><p>No templates saved yet.</p></div>';return;}
+  el.innerHTML=templates.map((t,i)=>`
+    <div class="template-card" onclick="loadTemplate(${i})">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div class="t-name">${esc(t.name)}</div><div class="t-info">${esc(new Date(t.createdAt).toLocaleString())}</div></div>
+        <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();deleteTemplate(${i})">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadTemplate(i){const templates=LS.get(KEYS.templates,[]);if(!templates[i])return;setFormState(templates[i].state);switchTab('compose');showToast('Template loaded','success');}
+function deleteTemplate(i){const templates=LS.get(KEYS.templates,[]);templates.splice(i,1);LS.set(KEYS.templates,templates);renderTemplates();}
+
+function addWebhook(){
+  const name=$('newWebhookName').value.trim();const url=$('newWebhookUrl').value.trim();
+  if(!name||!url){showToast('Enter a name and URL','error');return;}
+  const webhooks=LS.get(KEYS.webhooks,[]);webhooks.push({name,url,createdAt:new Date().toISOString()});
+  LS.set(KEYS.webhooks,webhooks);$('newWebhookName').value='';$('newWebhookUrl').value='';renderWebhooks();refreshWebhookSelect();showToast('Webhook saved!','success');
+}
+
+function renderWebhooks(){
+  const webhooks=LS.get(KEYS.webhooks,[]);const el=$('webhookList');
+  if(!webhooks.length){el.innerHTML='<div class="empty-state"><p>No saved webhooks yet.</p></div>';return;}
+  el.innerHTML=webhooks.map((w,i)=>`
+    <div class="saved-webhook ${LS.get(KEYS.activeWebhook,'')===i.toString()?'active':''}" onclick="selectWebhook(${i})">
+      <div style="flex:1;min-width:0"><div class="name">${esc(w.name)}</div><div class="url" title="${esc(w.url)}">${esc(w.url)}</div></div>
+      <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();deleteWebhook(${i})">Delete</button>
+    </div>`).join('');
+}
+
+function selectWebhook(i){const webhooks=LS.get(KEYS.webhooks,[]);if(!webhooks[i])return;$('webhook').value=webhooks[i].url;LS.set(KEYS.activeWebhook,i.toString());validateWebhook();updatePreview();renderWebhooks();}
+function deleteWebhook(i){const webhooks=LS.get(KEYS.webhooks,[]);webhooks.splice(i,1);LS.set(KEYS.webhooks,webhooks);LS.set(KEYS.activeWebhook,'');renderWebhooks();refreshWebhookSelect();}
+function refreshWebhookSelect(){const webhooks=LS.get(KEYS.webhooks,[]);const sel=$('savedWebhookSelect');sel.innerHTML='<option value="">-- Select a saved webhook --</option>'+webhooks.map((w,i)=>`<option value="${i}">${esc(w.name)}</option>`).join('');}
+function loadSavedWebhook(){const i=$('savedWebhookSelect').value;if(i==='')return;selectWebhook(parseInt(i));}
+function closeModal(id){$(id).classList.remove('open');}
+
+function clearForm(){
+  if(!confirm('Clear the entire form?'))return;
+  $('webhook').value='';$('username').value='';$('avatarUrl').value='';$('content').value='';
+  $('ttsToggle').checked=false;$('messageId').value='';$('embedToggle').checked=false;
+  $('embedAuthorName').value='';$('embedAuthorIcon').value='';$('embedAuthorUrl').value='';
+  $('embedTitle').value='';$('embedUrl').value='';$('embedDesc').value='';
+  $('embedThumbnail').value='';$('embedImage').value='';
+  $('embedColor').value='#5865f2';$('embedColorPicker').value='#5865f2';
+  $('embedFooterText').value='';$('embedFooterIcon').value='';$('embedTimestamp').checked=true;
+  $('embedFieldsContainer').innerHTML='';
+  window._actionButtons=[[]];renderActionButtons();
+  window._attachedFile=null;$('fileName').textContent='';
+  $('fileDrop').querySelector('p').textContent='Click or drag a file here (max 25MB)';
+  $('fileInput').value='';$('webhookStatus').textContent='';
+  toggleEmbed();updatePreview();
+}
+
+function showToast(msg,type){const t=$('toast');t.textContent=msg;t.className=`toast ${type} visible`;setTimeout(()=>t.className=`toast ${type}`,3000);}
+
+function exportAllData(){
+  const data={webhooks:LS.get(KEYS.webhooks,[]),templates:LS.get(KEYS.templates,[]),history:LS.get(KEYS.history,[]),formState:getFormState()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='discord-webhook-data.json';a.click();URL.revokeObjectURL(a.href);
+}
+
+function importAllData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.webhooks)LS.set(KEYS.webhooks,data.webhooks);
+      if(data.templates)LS.set(KEYS.templates,data.templates);
+      if(data.history)LS.set(KEYS.history,data.history);
+      if(data.formState)LS.set(KEYS.formState,data.formState);
+      if(data.formState)setFormState(data.formState);
+      refreshWebhookSelect();renderWebhooks();renderTemplates();renderHistory();showToast('Data imported!','success');
+    }catch{showToast('Invalid JSON file','error')}
+  };
+  reader.readAsText(file);e.target.value='';
+}
+
+document.querySelectorAll('input, textarea, select').forEach(el=>{
+  if(['savedWebhookSelect','fileInput','importFile','newWebhookName','newWebhookUrl','templateName','messageId','emojiSearch','customEmojiName','customEmojiId'].includes(el.id))return;
+  el.addEventListener('input',()=>{schedulePreview()});
+});
+
+document.querySelectorAll('input[type=checkbox]').forEach(el=>{
+  if(['customEmojiAnimated'].includes(el.id))return;
+  el.addEventListener('change',()=>{schedulePreview()});
+});
+
+restoreFormState();
+refreshWebhookSelect();
+updatePreview();
+</script>
+</body>
+</html>
