@@ -50,7 +50,8 @@ width:100%;background:var(--bg-input);border:none;border-radius:6px;padding:9px 
 color:var(--text-primary);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:box-shadow .2s}
 input:focus,textarea:focus,select:focus{box-shadow:0 0 0 2px var(--accent)}
 textarea{resize:vertical;min-height:70px}
-select{cursor:pointer}
+select{cursor:pointer;-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2396989d'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+option{background:var(--bg-input);color:var(--text-primary)}
 
 .toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .toggle{position:relative;width:40px;height:22px;cursor:pointer;flex-shrink:0}
@@ -276,12 +277,17 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
 
           <div class="field">
             <label>Message ID (for editing/deleting)</label>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Paste a message ID or a Discord message link</div>
             <div class="field-row">
-              <input type="text" id="messageId" placeholder="Leave empty for new message">
-              <div class="btn-group" style="align-items:end">
-                <button class="btn btn-xs btn-secondary" onclick="loadLastMessageId()" title="Use last sent message ID">Last ID</button>
-                <button class="btn btn-xs btn-danger" onclick="deleteMessage()" title="Delete this message">Delete</button>
-              </div>
+              <input type="text" id="messageId" placeholder="e.g. 123456789 or https://discord.com/channels/...">
+              <select id="recentMsgIds" onchange="selectRecentMsgId()" style="width:140px;font-size:12px">
+                <option value="">Recent IDs</option>
+              </select>
+            </div>
+            <div class="btn-group" style="margin-top:6px">
+              <button class="btn btn-xs btn-secondary" onclick="loadLastMessageId()" title="Use last sent message ID">Last ID</button>
+              <button class="btn btn-xs btn-warning" onclick="sendAsEdit()" title="Re-send as edit using current message ID">Edit Message</button>
+              <button class="btn btn-xs btn-danger" onclick="deleteMessage()" title="Delete this message">Delete</button>
             </div>
           </div>
         </div>
@@ -1125,7 +1131,10 @@ async function sendMessage(){
   const url=$('webhook').value.trim();
   if(!url){showToast('Please enter a webhook URL','error');return;}
 
-  const isEdit=$('messageId').value.trim()!=='';
+  const rawMsgId=$('messageId').value.trim();
+  const msgId=rawMsgId?parseMessageId(rawMsgId):'';
+  if(rawMsgId&&rawMsgId!==msgId)$('messageId').value=msgId;
+  const isEdit=msgId!=='';
   const payload=buildPayload();
 
   if(!payload.content&&!payload.embeds&&!payload.components&&!window._attachedFile){
@@ -1150,10 +1159,10 @@ async function sendMessage(){
       const fd=new FormData();
       fd.append('payload_json',JSON.stringify(payload));
       fd.append('file',window._attachedFile);
-      const endpoint=isEdit?`${url}/messages/${$('messageId').value.trim()}`:url;
+      const endpoint=isEdit?`${url}/messages/${msgId}`:url;
       res=await fetch(endpoint,{method:isEdit?'PATCH':'POST',body:fd});
     }else{
-      const endpoint=isEdit?`${url}/messages/${$('messageId').value.trim()}`:url;
+      const endpoint=isEdit?`${url}/messages/${msgId}`:url;
       res=await fetch(endpoint,{
         method:isEdit?'PATCH':'POST',
         headers:{'Content-Type':'application/json'},
@@ -1162,11 +1171,17 @@ async function sendMessage(){
     }
 
     if(res.status===204||(res.status>=200&&res.status<300)){
-      showToast(isEdit?'Message updated!':'Message sent!','success');
-      let msgId=$('messageId').value.trim();
+      let msgId='';
       try{const data=await res.json();if(data&&data.id)msgId=data.id}catch{}
+      if(msgId){
+        $('messageId').value=msgId;
+        LS.set('dws_lastMessageId',msgId);
+        showToast(isEdit?'Message updated!':'Message sent! (ID: '+msgId+')','success');
+      }else{
+        showToast(isEdit?'Message updated!':'Message sent!','success');
+      }
       addHistory({url,payload,messageId:msgId,type:isEdit?'edit':'send',timestamp:new Date().toISOString()});
-      if(!isEdit&&msgId)LS.set('dws_lastMessageId',msgId);
+      refreshRecentMsgIds();
     }else{
       const text=await res.text().catch(()=>'');
       showToast(`Failed: ${res.status} ${text||res.statusText}`,'error');
@@ -1181,9 +1196,11 @@ async function sendMessage(){
 
 async function deleteMessage(){
   const url=$('webhook').value.trim();
-  const msgId=$('messageId').value.trim();
+  let msgId=$('messageId').value.trim();
   if(!url){showToast('Enter a webhook URL','error');return;}
-  if(!msgId){showToast('Enter a message ID to delete','error');return;}
+  if(!msgId){showToast('Enter a message ID or link to delete','error');return;}
+  msgId=parseMessageId(msgId);
+  $('messageId').value=msgId;
   try{
     const res=await fetch(`${url}/messages/${msgId}`,{method:'DELETE'});
     if(res.status===204||res.ok){showToast('Message deleted!','success');$('messageId').value='';saveFormState();}
@@ -1195,6 +1212,50 @@ function loadLastMessageId(){
   const last=LS.get('dws_lastMessageId','');
   if(last)$('messageId').value=last;
   else showToast('No previous message ID found','error');
+}
+
+function refreshRecentMsgIds(){
+  const h=LS.get(KEYS.history,[]);
+  const sel=$('recentMsgIds');
+  const seen=new Set();
+  const opts=[{value:'',label:'Recent IDs'}];
+  h.forEach(item=>{
+    if(item.messageId&&!seen.has(item.messageId)){
+      seen.add(item.messageId);
+      const label=item.messageId+((item.payload||{}).content?' - '+(item.payload.content||'').substring(0,30):'');
+      opts.push({value:item.messageId,label});
+    }
+  });
+  sel.innerHTML=opts.map(o=>`<option value="${esc(o.value)}">${esc(o.label.substring(0,50))}</option>`).join('');
+}
+
+function selectRecentMsgId(){
+  const v=$('recentMsgIds').value;
+  if(v)$('messageId').value=v;
+}
+
+function parseMessageId(input){
+  const s=input.trim();
+  const m=s.match(/^https?:\/\/(?:discord(?:app)?\.com)\/channels\/\d+\/\d+\/(\d+)$/i);
+  if(m)return m[1];
+  if(/^\d+$/.test(s))return s;
+  return s;
+}
+
+$('messageId').addEventListener('blur',function(){
+  const v=this.value.trim();
+  if(!v)return;
+  const parsed=parseMessageId(v);
+  if(parsed!==v){this.value=parsed;showToast('Extracted message ID from link','success');}
+});
+
+function sendAsEdit(){
+  const url=$('webhook').value.trim();
+  const rawMsgId=$('messageId').value.trim();
+  if(!url){showToast('Enter a webhook URL','error');return;}
+  if(!rawMsgId){showToast('Enter a message ID or link to edit','error');return;}
+  $('messageId').value=parseMessageId(rawMsgId);
+  sendMessage();
 }
 
 function addHistory(entry){
@@ -1222,6 +1283,7 @@ function renderHistory(){
       <div class="msg-body">${esc(content.substring(0,200))}${hasBtns?' <span style="color:var(--accent);font-size:11px">[buttons]</span>':''}</div>
       <div class="msg-actions">
         <button class="btn btn-xs btn-secondary" onclick="loadHistoryItem(${i})">Load</button>
+        ${msgId?`<button class="btn btn-xs btn-warning" onclick="editHistoryItem(${i})">Edit</button>`:''}
         <button class="btn btn-xs btn-danger" onclick="deleteHistoryItem(${i})">Delete</button>
       </div>
     </div>`;
@@ -1271,6 +1333,11 @@ function loadHistoryItem(i){
     $('buttonsBody').classList.add('open');
   }
   validateWebhook();updatePreview();switchTab('compose');showToast('Message loaded into composer','success');
+}
+
+function editHistoryItem(i){
+  loadHistoryItem(i);
+  showToast('Ready to edit - message ID loaded','success');
 }
 
 function deleteHistoryItem(i){const h=LS.get(KEYS.history,[]);h.splice(i,1);LS.set(KEYS.history,h);renderHistory();}
@@ -1393,6 +1460,7 @@ document.querySelectorAll('input[type=checkbox]').forEach(el=>{
 
 restoreFormState();
 refreshWebhookSelect();
+refreshRecentMsgIds();
 updatePreview();
 </script>
 </body>
