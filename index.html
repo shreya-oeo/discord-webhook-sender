@@ -219,10 +219,13 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
             Webhook
           </div>
           <div class="field">
-            <label>Saved Webhook</label>
-            <select id="savedWebhookSelect" onchange="loadSavedWebhook()">
-              <option value="">-- Select a saved webhook --</option>
-            </select>
+            <label>Saved Profile</label>
+            <div style="display:flex;gap:8px">
+              <select id="savedWebhookSelect" onchange="loadSavedWebhook()" style="flex:1">
+                <option value="">-- Select a saved profile --</option>
+              </select>
+              <button class="btn btn-xs btn-secondary" onclick="saveCurrentAsProfile()" title="Save current URL/username/avatar as a new profile">Save</button>
+            </div>
           </div>
           <div class="field">
             <label>Webhook URL</label>
@@ -470,19 +473,27 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
     <div class="panel">
       <div class="panel-title">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        Saved Webhooks
+        Webhook Profiles
+      </div>
+      <div class="field">
+        <label>Profile Name</label>
+        <input type="text" id="newWebhookName" placeholder="My Server Webhook">
+      </div>
+      <div class="field">
+        <label>Webhook URL</label>
+        <input type="url" id="newWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
       </div>
       <div class="field-row">
         <div class="field">
-          <label>Name</label>
-          <input type="text" id="newWebhookName" placeholder="My Server Webhook">
+          <label>Default Username</label>
+          <input type="text" id="newWebhookUsername" placeholder="Bot name (optional)">
         </div>
         <div class="field">
-          <label>URL</label>
-          <input type="url" id="newWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
+          <label>Default Avatar URL</label>
+          <input type="url" id="newWebhookAvatar" placeholder="https://... (optional)">
         </div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="addWebhook()" style="margin-bottom:16px">Save Webhook</button>
+      <button class="btn btn-primary btn-sm" onclick="addWebhook()" style="margin-bottom:16px">Save Profile</button>
       <div id="webhookList">
         <div class="empty-state"><p>No saved webhooks yet. Add one above.</p></div>
       </div>
@@ -1292,25 +1303,40 @@ function deleteTemplate(i){const templates=LS.get(KEYS.templates,[]);templates.s
 
 function addWebhook(){
   const name=$('newWebhookName').value.trim();const url=$('newWebhookUrl').value.trim();
+  const username=$('newWebhookUsername').value.trim();const avatar=$('newWebhookAvatar').value.trim();
   if(!name||!url){showToast('Enter a name and URL','error');return;}
-  const webhooks=LS.get(KEYS.webhooks,[]);webhooks.push({name,url,createdAt:new Date().toISOString()});
-  LS.set(KEYS.webhooks,webhooks);$('newWebhookName').value='';$('newWebhookUrl').value='';renderWebhooks();refreshWebhookSelect();showToast('Webhook saved!','success');
+  const webhooks=LS.get(KEYS.webhooks,[]);webhooks.push({name,url,username,avatar,createdAt:new Date().toISOString()});
+  LS.set(KEYS.webhooks,webhooks);$('newWebhookName').value='';$('newWebhookUrl').value='';$('newWebhookUsername').value='';$('newWebhookAvatar').value='';renderWebhooks();refreshWebhookSelect();showToast('Profile saved!','success');
 }
 
 function renderWebhooks(){
   const webhooks=LS.get(KEYS.webhooks,[]);const el=$('webhookList');
-  if(!webhooks.length){el.innerHTML='<div class="empty-state"><p>No saved webhooks yet.</p></div>';return;}
-  el.innerHTML=webhooks.map((w,i)=>`
-    <div class="saved-webhook ${LS.get(KEYS.activeWebhook,'')===i.toString()?'active':''}" onclick="selectWebhook(${i})">
-      <div style="flex:1;min-width:0"><div class="name">${esc(w.name)}</div><div class="url" title="${esc(w.url)}">${esc(w.url)}</div></div>
+  if(!webhooks.length){el.innerHTML='<div class="empty-state"><p>No saved profiles yet.</p></div>';return;}
+  el.innerHTML=webhooks.map((w,i)=>{
+    const sub=[];if(w.username)sub.push(esc(w.username));if(w.avatar)sub.push('Custom Avatar');
+    return `<div class="saved-webhook ${LS.get(KEYS.activeWebhook,'')===i.toString()?'active':''}" onclick="selectWebhook(${i})">
+      <div style="flex:1;min-width:0"><div class="name">${esc(w.name)}</div><div class="url" title="${esc(w.url)}">${esc(w.url)}</div>${sub.length?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${sub.join(' · ')}</div>`:''}</div>
       <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();deleteWebhook(${i})">Delete</button>
-    </div>`).join('');
+    </div>`}).join('');
 }
 
-function selectWebhook(i){const webhooks=LS.get(KEYS.webhooks,[]);if(!webhooks[i])return;$('webhook').value=webhooks[i].url;LS.set(KEYS.activeWebhook,i.toString());validateWebhook();updatePreview();renderWebhooks();}
+function selectWebhook(i){const webhooks=LS.get(KEYS.webhooks,[]);if(!webhooks[i])return;$('webhook').value=webhooks[i].url;if(webhooks[i].username)$('username').value=webhooks[i].username;if(webhooks[i].avatar)$('avatarUrl').value=webhooks[i].avatar;LS.set(KEYS.activeWebhook,i.toString());validateWebhook();updatePreview();renderWebhooks();}
 function deleteWebhook(i){const webhooks=LS.get(KEYS.webhooks,[]);webhooks.splice(i,1);LS.set(KEYS.webhooks,webhooks);LS.set(KEYS.activeWebhook,'');renderWebhooks();refreshWebhookSelect();}
-function refreshWebhookSelect(){const webhooks=LS.get(KEYS.webhooks,[]);const sel=$('savedWebhookSelect');sel.innerHTML='<option value="">-- Select a saved webhook --</option>'+webhooks.map((w,i)=>`<option value="${i}">${esc(w.name)}</option>`).join('');}
+function refreshWebhookSelect(){const webhooks=LS.get(KEYS.webhooks,[]);const sel=$('savedWebhookSelect');sel.innerHTML='<option value="">-- Select a saved profile --</option>'+webhooks.map((w,i)=>{const suffix=w.username?` (${w.username})`:'';return`<option value="${i}">${esc(w.name)}${suffix}</option>`}).join('');}
 function loadSavedWebhook(){const i=$('savedWebhookSelect').value;if(i==='')return;selectWebhook(parseInt(i));}
+
+function saveCurrentAsProfile(){
+  const url=$('webhook').value.trim();
+  const username=$('username').value.trim();
+  const avatar=$('avatarUrl').value.trim();
+  if(!url){showToast('Enter a webhook URL first','error');return;}
+  const name=username||'Profile '+(LS.get(KEYS.webhooks,[]).length+1);
+  const webhooks=LS.get(KEYS.webhooks,[]);
+  webhooks.push({name,url,username,avatar,createdAt:new Date().toISOString()});
+  LS.set(KEYS.webhooks,webhooks);renderWebhooks();refreshWebhookSelect();
+  $('savedWebhookSelect').value=webhooks.length-1;
+  showToast('Profile saved!','success');
+}
 function closeModal(id){$(id).classList.remove('open');}
 
 function clearForm(){
