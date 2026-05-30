@@ -250,7 +250,10 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
           </div>
           <div class="field">
             <label>Webhook URL</label>
-            <input type="url" id="webhook" placeholder="https://discord.com/api/webhooks/...">
+            <div style="position:relative">
+              <input type="url" id="webhook" placeholder="https://discord.com/api/webhooks/..." style="padding-right:28px">
+              <button onclick="$('webhook').value='';validateWebhook();updatePreview()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1" title="Clear">&times;</button>
+            </div>
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div class="char-count" id="webhookStatus"></div>
               <button class="btn btn-xs btn-secondary" onclick="fetchWebhookInfo()" style="margin-top:2px">Fetch Info</button>
@@ -267,11 +270,17 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
           </div>
           <div class="field-row">
             <div class="field">
-              <label>Username</label>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+                <label style="margin-bottom:0">Username</label>
+                <button onclick="$('username').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0;line-height:1" title="Clear">&times;</button>
+              </div>
               <input type="text" id="username" placeholder="Custom name">
             </div>
             <div class="field">
-              <label>Avatar URL</label>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+                <label style="margin-bottom:0">Avatar URL</label>
+                <button onclick="$('avatarUrl').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0;line-height:1" title="Clear">&times;</button>
+              </div>
               <input type="url" id="avatarUrl" placeholder="https://...">
             </div>
           </div>
@@ -285,7 +294,10 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
 
           <div class="field">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <label style="margin-bottom:0">Content</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <label style="margin-bottom:0">Content</label>
+                <button onclick="$('content').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0;line-height:1" title="Clear content">&times;</button>
+              </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <button class="btn btn-xs btn-secondary" onclick="openEmojiPicker(event,'content')" title="Insert emoji">&#x1F60A; Emoji</button>
                 <label class="toggle" style="margin-bottom:0;display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -343,7 +355,10 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             <label>Message ID (for editing/deleting)</label>
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Paste a message ID or a Discord message link</div>
             <div class="field-row">
-              <input type="text" id="messageId" placeholder="e.g. 123456789 or https://discord.com/channels/...">
+              <div style="position:relative;display:flex;align-items:center">
+                <input type="text" id="messageId" placeholder="e.g. 123456789 or https://discord.com/channels/..." style="padding-right:28px">
+                <button onclick="$('messageId').value='';updatePreview()" style="position:absolute;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1" title="Clear">&times;</button>
+              </div>
               <select id="recentMsgIds" onchange="selectRecentMsgId()" style="width:140px;font-size:12px">
                 <option value="">Recent IDs</option>
               </select>
@@ -351,7 +366,6 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             <div class="btn-group" style="margin-top:6px">
               <button class="btn btn-xs btn-secondary" onclick="loadLastMessageId()" title="Use last sent message ID">Last ID</button>
               <button class="btn btn-xs btn-warning" onclick="sendAsEdit()" title="Re-send as edit using current message ID">Edit Message</button>
-              <button class="btn btn-xs btn-danger" onclick="deleteMessage()" title="Delete this message">Delete</button>
             </div>
           </div>
         </div>
@@ -374,29 +388,29 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             <div style="padding-top:12px">
               <div class="field-row">
                 <div class="field">
-                  <label>Author Name</label>
+                  <label>Author Name <button onclick="$('embedAuthorName').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                   <input type="text" id="embedAuthorName" placeholder="Author name">
                 </div>
                 <div class="field">
-                  <label>Author Icon URL</label>
+                  <label>Author Icon URL <button onclick="$('embedAuthorIcon').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                   <input type="url" id="embedAuthorIcon" placeholder="https://...">
                 </div>
               </div>
               <div class="field">
-                <label>Author URL</label>
+                <label>Author URL <button onclick="$('embedAuthorUrl').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                 <input type="url" id="embedAuthorUrl" placeholder="https://...">
               </div>
 
               <div class="field">
-                <label>Title</label>
+                <label>Title <button onclick="$('embedTitle').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                 <input type="text" id="embedTitle" placeholder="Embed title">
               </div>
               <div class="field">
-                <label>URL (title link)</label>
+                <label>URL (title link) <button onclick="$('embedUrl').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                 <input type="url" id="embedUrl" placeholder="https://...">
               </div>
               <div class="field">
-                <label>Description</label>
+                <label>Description <button onclick="$('embedDesc').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                 <textarea id="embedDesc" rows="3" placeholder="Embed description..."></textarea>
                 <div class="char-count" id="embedDescCount">0 / 4096</div>
               </div>
@@ -411,11 +425,11 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
 
               <div class="field-row">
                 <div class="field">
-                  <label>Thumbnail URL</label>
+                  <label>Thumbnail URL <button onclick="$('embedThumbnail').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                   <input type="url" id="embedThumbnail" placeholder="https://...">
                 </div>
                 <div class="field">
-                  <label>Image URL</label>
+                  <label>Image URL <button onclick="$('embedImage').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                   <input type="url" id="embedImage" placeholder="https://...">
                 </div>
               </div>
@@ -430,11 +444,11 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
 
               <div class="field-row">
                 <div class="field">
-                  <label>Footer Text</label>
+                  <label>Footer Text <button onclick="$('embedFooterText').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                   <input type="text" id="embedFooterText" placeholder="Footer text">
                 </div>
                 <div class="field">
-                  <label>Footer Icon URL</label>
+                  <label>Footer Icon URL <button onclick="$('embedFooterIcon').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
                   <input type="url" id="embedFooterIcon" placeholder="https://...">
                 </div>
               </div>
@@ -476,9 +490,13 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
         </div>
 
         <div class="btn-group">
-          <button class="btn btn-primary btn-block" id="sendBtn" onclick="sendMessage()">
+          <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()" style="flex:1">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             Send Message
+          </button>
+          <button class="btn btn-danger" onclick="deleteMessage()" title="Delete message by ID">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Delete
           </button>
         </div>
         <div class="btn-group" style="margin-top:8px">
@@ -1265,6 +1283,7 @@ async function sendMessage(){
   const msgId=rawMsgId?parseMessageId(rawMsgId):'';
   if(rawMsgId&&rawMsgId!==msgId)$('messageId').value=msgId;
   const isEdit=msgId!=='';
+  updateSendButton();
   const payload=buildPayload();
 
   if(!payload.content&&!payload.embeds&&!payload.components&&!window._attachedFiles){
@@ -1280,19 +1299,20 @@ async function sendMessage(){
 
   const btn=$('sendBtn');
   btn.disabled=true;
-  const origHTML=btn.innerHTML;
-  btn.innerHTML='<span class="spinner"></span> Sending...';
+  btn.innerHTML='<span class="spinner"></span> Working...';
 
   try{
     let res;
+    const baseUrl=url.endsWith('/')?url.slice(0,-1):url;
+    const waitParam=isEdit?'':'?wait=true';
     if(window._attachedFiles&&window._attachedFiles.length){
       const fd=new FormData();
       fd.append('payload_json',JSON.stringify(payload));
       window._attachedFiles.forEach((f,i)=>fd.append(`file${i}`,f));
-      const endpoint=isEdit?`${url}/messages/${msgId}`:url;
+      const endpoint=isEdit?`${baseUrl}/messages/${msgId}`:`${baseUrl}${waitParam}`;
       res=await fetch(endpoint,{method:isEdit?'PATCH':'POST',body:fd});
     }else{
-      const endpoint=isEdit?`${url}/messages/${msgId}`:url;
+      const endpoint=isEdit?`${baseUrl}/messages/${msgId}`:`${baseUrl}${waitParam}`;
       res=await fetch(endpoint,{
         method:isEdit?'PATCH':'POST',
         headers:{'Content-Type':'application/json'},
@@ -1308,6 +1328,7 @@ async function sendMessage(){
       if(msgIdOut){
         $('messageId').value=msgIdOut;
         LS.set('dws_lastMessageId',msgIdOut);
+        updateSendButton();
         showToast(isEdit?'Message updated!':'Message sent! (ID: '+msgIdOut+')','success');
       }else{
         showToast(isEdit?'Message updated!':'Message sent!','success');
@@ -1322,7 +1343,7 @@ async function sendMessage(){
     showToast(`Error: ${err.message}`,'error');
   }finally{
     btn.disabled=false;
-    btn.innerHTML=origHTML;
+    updateSendButton();
   }
 }
 
@@ -1335,7 +1356,7 @@ async function deleteMessage(){
   $('messageId').value=msgId;
   try{
     const res=await fetch(`${url}/messages/${msgId}`,{method:'DELETE'});
-    if(res.status===204||res.ok){showToast('Message deleted!','success');$('messageId').value='';saveFormState();}
+    if(res.status==204||res.ok){showToast('Message deleted!','success');$('messageId').value='';saveFormState();updateSendButton();}
     else showToast('Failed to delete message','error');
   }catch(err){showToast(`Error: ${err.message}`,'error')}
 }
@@ -1365,6 +1386,15 @@ function selectRecentMsgId(){
   const v=$('recentMsgIds').value;
   if(v)$('messageId').value=v;
 }
+
+function updateSendButton(){
+  const btn=$('sendBtn');
+  const hasId=$('messageId').value.trim()!=='';
+  const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+  btn.innerHTML=icon+(hasId?' Edit Message':' Send Message');
+}
+
+$('messageId').addEventListener('input',updateSendButton);
 
 function parseMessageId(input){
   const s=input.trim();
@@ -1464,7 +1494,7 @@ function loadHistoryItem(i){
     btnPanel.querySelector('.collapsible-header').classList.add('open');
     $('buttonsBody').classList.add('open');
   }
-  validateWebhook();updatePreview();switchTab('compose');showToast('Message loaded into composer','success');
+  validateWebhook();updatePreview();switchTab('compose');updateSendButton();showToast('Message loaded into composer','success');
 }
 
 function applyTheme(theme){
@@ -1568,7 +1598,7 @@ function clearForm(){
   window._actionButtons=[[]];renderActionButtons();
   window._attachedFiles=null;renderFileList();
   $('fileInput').value='';$('webhookStatus').textContent='';
-  toggleEmbed();updatePreview();
+  toggleEmbed();updatePreview();updateSendButton();
 }
 
 function copyPayload(){
@@ -1664,6 +1694,7 @@ restoreFormState();
 refreshWebhookSelect();
 refreshRecentMsgIds();
 updatePreview();
+updateSendButton();
 updateThemeIcon();
 
 document.addEventListener('keydown',e=>{
