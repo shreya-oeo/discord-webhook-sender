@@ -114,10 +114,14 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
 .preview-card{background:var(--bg-secondary);border-radius:var(--radius);padding:16px}
 .preview-username{font-size:14px;font-weight:600;color:#fff}
 .preview-content{font-size:13px;color:var(--text-primary);white-space:pre-wrap;word-break:break-word;line-height:1.5;margin-top:4px}
+.preview-content code{background:var(--bg-input);padding:1px 4px;border-radius:3px;font-size:12px}
+.preview-content pre{background:var(--bg-input);padding:8px;border-radius:4px;overflow-x:auto;margin:4px 0}
+.preview-content pre code{background:none;padding:0}
 .embed-preview{border-left:4px solid var(--accent);border-radius:4px;background:var(--bg-primary)!important;padding:12px 16px;margin-top:8px}
 .embed-preview .embed-author{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;margin-bottom:6px}
 .embed-preview .embed-author img{width:20px;height:20px;border-radius:50%}
 .embed-preview .embed-title{font-size:14px;font-weight:600;color:#fff;margin-bottom:4px}
+.embed-preview .embed-title a{color:var(--accent);text-decoration:none}
 .embed-preview .embed-desc{font-size:13px;color:var(--text-primary);white-space:pre-wrap;word-break:break-word;line-height:1.4}
 .embed-preview .embed-field{margin-top:8px}
 .embed-preview .embed-field-name{font-size:13px;font-weight:600;color:#fff}
@@ -203,11 +207,13 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
 .emoji-picker .ep-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:8px;overflow-y:auto;max-height:220px}
 .emoji-picker .ep-grid span{font-size:20px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:4px;transition:background .1s}
 .emoji-picker .ep-grid span:hover{background:var(--bg-input)}
-.emoji-picker .ep-grid img.ep-custom{width:24px;height:24px;object-fit:contain}
 .emoji-picker .ep-custom-section{padding:8px}
 .emoji-picker .ep-custom-section label{font-size:11px;color:var(--text-muted);margin-bottom:4px;display:block}
 .emoji-picker .ep-custom-section .field-row{margin-top:4px}
 .emoji-picker .ep-custom-section input{font-size:12px;padding:6px 8px}
+
+.webhook-valid{color:var(--success)!important}
+.webhook-invalid{color:var(--error)!important}
 </style>
 </head>
 <body>
@@ -251,8 +257,8 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
           <div class="field">
             <label>Webhook URL</label>
             <div style="position:relative">
-              <input type="url" id="webhook" placeholder="https://discord.com/api/webhooks/..." style="padding-right:28px">
-              <button onclick="$('webhook').value='';validateWebhook();updatePreview()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1" title="Clear">&times;</button>
+              <input type="url" id="webhook" placeholder="https://discord.com/api/webhooks/..." style="padding-right:28px" oninput="validateWebhook();schedulePreview()">
+              <button onclick="$('webhook').value='';validateWebhook();schedulePreview()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1" title="Clear">&times;</button>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center">
               <div class="char-count" id="webhookStatus"></div>
@@ -272,16 +278,16 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             <div class="field">
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
                 <label style="margin-bottom:0">Username</label>
-                <button onclick="$('username').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0;line-height:1" title="Clear">&times;</button>
+                <button onclick="$('username').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0;line-height:1" title="Clear">&times;</button>
               </div>
-              <input type="text" id="username" placeholder="Custom name">
+              <input type="text" id="username" placeholder="Custom name" oninput="schedulePreview()">
             </div>
             <div class="field">
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
                 <label style="margin-bottom:0">Avatar URL</label>
-                <button onclick="$('avatarUrl').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0;line-height:1" title="Clear">&times;</button>
+                <button onclick="$('avatarUrl').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0;line-height:1" title="Clear">&times;</button>
               </div>
-              <input type="url" id="avatarUrl" placeholder="https://...">
+              <input type="url" id="avatarUrl" placeholder="https://..." oninput="schedulePreview()">
             </div>
           </div>
         </div>
@@ -296,17 +302,17 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <div style="display:flex;align-items:center;gap:6px">
                 <label style="margin-bottom:0">Content</label>
-                <button onclick="$('content').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0;line-height:1" title="Clear content">&times;</button>
+                <button onclick="$('content').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0;line-height:1" title="Clear content">&times;</button>
               </div>
               <div style="display:flex;align-items:center;gap:8px">
-                <button class="btn btn-xs btn-secondary" onclick="openEmojiPicker(event,'content')" title="Insert emoji">&#x1F60A; Emoji</button>
+                <button class="btn btn-xs btn-secondary" onclick="openEmojiPicker(event,null,null)" title="Insert emoji">&#x1F60A; Emoji</button>
                 <label class="toggle" style="margin-bottom:0;display:flex;align-items:center;gap:6px;cursor:pointer">
-                  <input type="checkbox" id="ttsToggle">
+                  <input type="checkbox" id="ttsToggle" onchange="schedulePreview()">
                   <span class="toggle-label" style="font-size:11px;text-transform:uppercase;font-weight:600;color:var(--text-muted)">TTS</span>
                 </label>
               </div>
             </div>
-            <textarea id="content" rows="5" placeholder="Type your message here... (Markdown supported)&#10;&#10;Unicode emoji: &#x1F60A; &#x1F44D; &#x2764;&#xFE0F;&#10;Custom emoji: :name: or :name:id (preview won't render these)&#10;&#10;Ctrl+Enter to send"></textarea>
+            <textarea id="content" rows="5" placeholder="Type your message here... (Markdown supported)&#10;&#10;Unicode emoji: &#x1F60A; &#x1F44D; &#x2764;&#xFE0F;&#10;Custom emoji: :name: or :name:id&#10;&#10;Ctrl+Enter to send" oninput="schedulePreview()"></textarea>
             <div class="char-count" id="contentCount">0 / 2000</div>
           </div>
 
@@ -329,35 +335,35 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div class="toggle-row" style="margin-bottom:0">
-                <label class="toggle" style="margin:0"><input type="checkbox" id="suppressEmbeds"><span class="slider"></span></label>
+                <label class="toggle" style="margin:0"><input type="checkbox" id="suppressEmbeds" onchange="schedulePreview()"><span class="slider"></span></label>
                 <span class="toggle-label" style="font-size:12px">Suppress Embeds</span>
               </div>
               <div class="toggle-row" style="margin-bottom:0">
-                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionEveryone"><span class="slider"></span></label>
+                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionEveryone" onchange="schedulePreview()"><span class="slider"></span></label>
                 <span class="toggle-label" style="font-size:12px">@everyone</span>
               </div>
               <div class="toggle-row" style="margin-bottom:0">
-                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionRoles"><span class="slider"></span></label>
+                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionRoles" onchange="schedulePreview()"><span class="slider"></span></label>
                 <span class="toggle-label" style="font-size:12px">All Roles</span>
               </div>
               <div class="toggle-row" style="margin-bottom:0">
-                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionUsers" checked><span class="slider"></span></label>
+                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionUsers" checked onchange="schedulePreview()"><span class="slider"></span></label>
                 <span class="toggle-label" style="font-size:12px">User Pings</span>
               </div>
             </div>
             <div class="field" style="margin-top:8px;margin-bottom:0">
               <label style="font-size:10px">Allowed Role/User IDs (comma separated)</label>
-              <input type="text" id="mentionParseIds" placeholder="e.g. 123456,789012 for specific roles/users">
+              <input type="text" id="mentionParseIds" placeholder="e.g. 123456,789012 for specific roles/users" oninput="schedulePreview()">
             </div>
           </div>
 
           <div class="field">
             <label>Message ID (for editing/deleting)</label>
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Paste a message ID or a Discord message link</div>
-            <div class="field-row">
-              <div style="position:relative;display:flex;align-items:center">
-                <input type="text" id="messageId" placeholder="e.g. 123456789 or https://discord.com/channels/..." style="padding-right:28px">
-                <button onclick="$('messageId').value='';updatePreview()" style="position:absolute;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1" title="Clear">&times;</button>
+            <div style="display:flex;gap:8px">
+              <div style="position:relative;flex:1;display:flex;align-items:center">
+                <input type="text" id="messageId" placeholder="e.g. 123456789 or https://discord.com/channels/..." style="padding-right:28px" oninput="onMessageIdChange()">
+                <button onclick="$('messageId').value='';onMessageIdChange()" style="position:absolute;right:6px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1" title="Clear">&times;</button>
               </div>
               <select id="recentMsgIds" onchange="selectRecentMsgId()" style="width:140px;font-size:12px">
                 <option value="">Recent IDs</option>
@@ -365,7 +371,6 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             </div>
             <div class="btn-group" style="margin-top:6px">
               <button class="btn btn-xs btn-secondary" onclick="loadLastMessageId()" title="Use last sent message ID">Last ID</button>
-              <button class="btn btn-xs btn-warning" onclick="sendAsEdit()" title="Re-send as edit using current message ID">Edit Message</button>
             </div>
           </div>
         </div>
@@ -388,30 +393,30 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
             <div style="padding-top:12px">
               <div class="field-row">
                 <div class="field">
-                  <label>Author Name <button onclick="$('embedAuthorName').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                  <input type="text" id="embedAuthorName" placeholder="Author name">
+                  <label>Author Name <button onclick="$('embedAuthorName').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                  <input type="text" id="embedAuthorName" placeholder="Author name" oninput="schedulePreview()">
                 </div>
                 <div class="field">
-                  <label>Author Icon URL <button onclick="$('embedAuthorIcon').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                  <input type="url" id="embedAuthorIcon" placeholder="https://...">
+                  <label>Author Icon URL <button onclick="$('embedAuthorIcon').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                  <input type="url" id="embedAuthorIcon" placeholder="https://..." oninput="schedulePreview()">
                 </div>
               </div>
               <div class="field">
-                <label>Author URL <button onclick="$('embedAuthorUrl').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                <input type="url" id="embedAuthorUrl" placeholder="https://...">
+                <label>Author URL <button onclick="$('embedAuthorUrl').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                <input type="url" id="embedAuthorUrl" placeholder="https://..." oninput="schedulePreview()">
               </div>
 
               <div class="field">
-                <label>Title <button onclick="$('embedTitle').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                <input type="text" id="embedTitle" placeholder="Embed title">
+                <label>Title <button onclick="$('embedTitle').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                <input type="text" id="embedTitle" placeholder="Embed title" oninput="schedulePreview()">
               </div>
               <div class="field">
-                <label>URL (title link) <button onclick="$('embedUrl').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                <input type="url" id="embedUrl" placeholder="https://...">
+                <label>URL (title link) <button onclick="$('embedUrl').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                <input type="url" id="embedUrl" placeholder="https://..." oninput="schedulePreview()">
               </div>
               <div class="field">
-                <label>Description <button onclick="$('embedDesc').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                <textarea id="embedDesc" rows="3" placeholder="Embed description..."></textarea>
+                <label>Description <button onclick="$('embedDesc').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                <textarea id="embedDesc" rows="3" placeholder="Embed description..." oninput="schedulePreview()"></textarea>
                 <div class="char-count" id="embedDescCount">0 / 4096</div>
               </div>
 
@@ -425,12 +430,12 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
 
               <div class="field-row">
                 <div class="field">
-                  <label>Thumbnail URL <button onclick="$('embedThumbnail').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                  <input type="url" id="embedThumbnail" placeholder="https://...">
+                  <label>Thumbnail URL <button onclick="$('embedThumbnail').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                  <input type="url" id="embedThumbnail" placeholder="https://..." oninput="schedulePreview()">
                 </div>
                 <div class="field">
-                  <label>Image URL <button onclick="$('embedImage').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                  <input type="url" id="embedImage" placeholder="https://...">
+                  <label>Image URL <button onclick="$('embedImage').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                  <input type="url" id="embedImage" placeholder="https://..." oninput="schedulePreview()">
                 </div>
               </div>
 
@@ -444,18 +449,18 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
 
               <div class="field-row">
                 <div class="field">
-                  <label>Footer Text <button onclick="$('embedFooterText').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                  <input type="text" id="embedFooterText" placeholder="Footer text">
+                  <label>Footer Text <button onclick="$('embedFooterText').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                  <input type="text" id="embedFooterText" placeholder="Footer text" oninput="schedulePreview()">
                 </div>
                 <div class="field">
-                  <label>Footer Icon URL <button onclick="$('embedFooterIcon').value='';updatePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
-                  <input type="url" id="embedFooterIcon" placeholder="https://...">
+                  <label>Footer Icon URL <button onclick="$('embedFooterIcon').value='';schedulePreview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0;margin-left:4px" title="Clear">&times;</button></label>
+                  <input type="url" id="embedFooterIcon" placeholder="https://..." oninput="schedulePreview()">
                 </div>
               </div>
 
               <div class="toggle-row">
                 <label class="toggle" style="margin:0">
-                  <input type="checkbox" id="embedTimestamp" checked>
+                  <input type="checkbox" id="embedTimestamp" checked onchange="schedulePreview()">
                   <span class="slider"></span>
                 </label>
                 <span class="toggle-label">Include Timestamp</span>
@@ -492,7 +497,7 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
         <div class="btn-group">
           <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()" style="flex:1">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send Message
+            <span id="sendBtnText">Send Message</span>
           </button>
           <button class="btn btn-danger" onclick="deleteMessage()" title="Delete message by ID">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -619,15 +624,15 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
     </div>
     <div class="field">
       <label>Emoji Name (without colons)</label>
-      <input type="text" id="customEmojiName" placeholder="e.g. pepe, blobcat">
+      <input type="text" id="customEmojiName" placeholder="e.g. pepe, blobcat" oninput="updateCustomEmojiPreview()">
     </div>
     <div class="field">
       <label>Emoji ID (numeric)</label>
-      <input type="text" id="customEmojiId" placeholder="e.g. 123456789012345678">
+      <input type="text" id="customEmojiId" placeholder="e.g. 123456789012345678" oninput="updateCustomEmojiPreview()">
     </div>
     <div class="toggle-row">
       <label class="toggle" style="margin:0">
-        <input type="checkbox" id="customEmojiAnimated">
+        <input type="checkbox" id="customEmojiAnimated" onchange="updateCustomEmojiPreview()">
         <span class="slider"></span>
       </label>
       <span class="toggle-label">Animated emoji</span>
@@ -660,147 +665,29 @@ body.light .modal-overlay{background:rgba(0,0,0,.3)}
 const EMOJI_DATA={
   'Smileys':[['😀','Grinning'],['😃','Smiley'],['😄','Smile'],['😁','Grin'],['😆','Laughing'],['😅','Sweat Smile'],['🤣','ROFL'],['😂','Joy'],['🙂','Slight Smile'],['😉','Wink'],['😊','Blush'],['😇','Innocent'],['🥰','Smiling Hearts'],['😍','Heart Eyes'],['🤩','Star Eyes'],['😘','Kissing Heart'],['😗','Kissing'],['😚','Kissing Closed'],['😙','Kissing Smiling'],['🥲','Smiling Tear'],['😋','Yum'],['😛','Tongue'],['😜','Wink Tongue'],['🤪','Zany'],['😝','Squint Tongue'],['🤑','Money Mouth'],['🤗','Hug'],['🤭','Hand Over Mouth'],['🤫','Shushing'],['🤔','Thinking'],['🫡','Salute'],['🤐','Zipper Mouth'],['🤨','Raised Eyebrow'],['😐','Neutral'],['😑','Expressionless'],['😶','No Mouth'],['😏','Smirk'],['😒','Unamused'],['🙄','Eye Roll'],['😬','Grimacing'],['🤥','Lying'],['😌','Relieved'],['😔','Pensive'],['😪','Sleepy'],['🤤','Drool'],['😴','Sleeping'],['😷','Mask'],['🤒','Thermometer'],['🤕','Bandage'],['🤢','Nauseated'],['🤮','Vomiting'],['🥵','Hot'],['🥶','Cold'],['😎','Sunglasses'],['🥸','Disguised'],['🤓','Nerd'],['🧐','Monocle']],
   'Gestures':[['👋','Wave'],['🤚','Raised Hand'],['✋','Stop'],['🖖','Vulcan'],['🫱','Rightwards'],['🫲','Leftwards'],['👌','OK'],['🤌','Pinched'],['✌️','Peace'],['🤞','Crossed Fingers'],['🫰','Hand with Index'],['🤟','Love'],['🤘','Horns'],['🤙','Call'],['👈','Left'],['👉','Right'],['👆','Up'],['👇','Down'],['☝️','Index Up'],['👍','Thumbs Up'],['👎','Thumbs Down'],['✊','Fist'],['👊','Punch'],['🤛','Left Fist'],['🤜','Right Fist'],['👏','Clap'],['🙌','Hooray'],['🫶','Heart Hands'],['👐','Open Hands'],['🤲','Palms Up'],['🤝','Handshake'],['🙏','Pray'],['✍️','Writing'],['💪','Flex'],['🦾','Mechanical Arm'],['🦿','Mechanical Leg'],['🦵','Leg'],['🦶','Foot'],['🖕','Middle Finger'],['🗣️','Speaking']],
-  'Hearts & Symbols':[['❤️','Red Heart'],['🧡','Orange Heart'],['💛','Yellow Heart'],['💚','Green Heart'],['💙','Blue Heart'],['💜','Purple Heart'],['🖤','Black Heart'],['🤍','White Heart'],['🤎','Brown Heart'],['💔','Broken Heart'],['❣️','Exclamation'],['💕','Two Hearts'],['💞','Revolving'],['💓','Heartbeat'],['💗','Growing'],['💖','Sparkling'],['💘','Cupid'],['💝','Gift Heart'],['💟','Heart Decoration'],['⭐','Star'],['🌟','Glowing Star'],['✨','Sparkles'],['💫','Dizzy'],['🔥','Fire'],['💯','Hundred'],['💢','Anger'],['💥','Collision'],['❓','Question'],['❗','Exclamation'],['⚠️','Warning'],['♻️','Recycle'],['💤','Sleep'],['💢','Anger'],['🕹️','Joystick'],['🎮','Game Controller'],['🎲','Die'],['🎯','Direct Hit'],['🏆','Trophy'],['🥇','Gold Medal'],['🥈','Silver Medal'],['🥉','Bronze Medal'],['⚽','Soccer'],['🏀','Basketball'],['🏈','Football'],['⚾','Baseball'],['🥎','Softball'],['🎾','Tennis'],['🏐','Volleyball']],
-  'Objects & Misc':[['💻','Laptop'],['🖥️','Desktop'],['📱','Phone'],['⌚','Watch'],['📷','Camera'],['🎥','Movie'],['🎬','Clapper'],['🎤','Microphone'],['🎧','Headphones'],['🎵','Note'],['🎶','Notes'],['🎸','Guitar'],['🎹','Keys'],['🥁','Drum'],['🔔','Bell'],['🔕','No Bell'],['📢','Loudspeaker'],['📣','Megaphone'],[' locked','Lock'],['🔓','Unlock'],['🔒','Lock'],['💌','Love Letter'],['📧','Email'],['💬','Speech'],['💭','Thought',['💍','Ring'],['💎','Gem'],[' gift','Gift'],['🎁','Present'],['🏷️','Label'],['🔖','Bookmark'],['📚','Books'],['📖','Book'],['✏️','Pencil'],['🖊️','Pen'],['📝','Memo'],['💼','Briefcase'],['📁','Folder'],['📂','Open Folder'],['🗂️','Card Index'],['📅','Calendar'],['🗓️','Spiral Calendar'],['📌','Pushpin'],['📍','Round Pushpin'],['✂️','Scissors'],['📏','Ruler'],['🧲','Magnet'],['🔧','Wrench'],['🔨','Hammer'],['⛏️','Pick'],['🔩','Nut and Bolt'],['⚙️','Gear'],['⚖️','Scale'],['🔗','Link'],['⛓️','Chains']]],
+  'Hearts & Symbols':[['❤️','Red Heart'],['🧡','Orange Heart'],['💛','Yellow Heart'],['💚','Green Heart'],['💙','Blue Heart'],['💜','Purple Heart'],['🖤','Black Heart'],['🤍','White Heart'],['🤎','Brown Heart'],['💔','Broken Heart'],['❣️','Exclamation'],['💕','Two Hearts'],['💞','Revolving'],['💓','Heartbeat'],['💗','Growing'],['💖','Sparkling'],['💘','Cupid'],['💝','Gift Heart'],['💟','Heart Decoration'],['⭐','Star'],['🌟','Glowing Star'],['✨','Sparkles'],['💫','Dizzy'],['🔥','Fire'],['💯','Hundred'],['💢','Anger'],['💥','Collision'],['❓','Question'],['❗','Exclamation'],['⚠️','Warning'],['♻️','Recycle'],['💤','Sleep'],['🕹️','Joystick'],['🎮','Game Controller'],['🎲','Die'],['🎯','Direct Hit'],['🏆','Trophy'],['🥇','Gold Medal'],['🥈','Silver Medal'],['🥉','Bronze Medal'],['⚽','Soccer'],['🏀','Basketball'],['🏈','Football'],['⚾','Baseball'],['🥎','Softball'],['🎾','Tennis'],['🏐','Volleyball']],
+  'Objects & Misc':[['💻','Laptop'],['🖥️','Desktop'],['📱','Phone'],['⌚','Watch'],['📷','Camera'],['🎥','Movie'],['🎬','Clapper'],['🎤','Microphone'],['🎧','Headphones'],['🎵','Note'],['🎶','Notes'],['🎸','Guitar'],['🎹','Keys'],['🥁','Drum'],['🔔','Bell'],['🔕','No Bell'],['📢','Loudspeaker'],['📣','Megaphone'],['🔓','Unlock'],['🔒','Lock'],['💌','Love Letter'],['📧','Email'],['💬','Speech'],['💭','Thought'],['💍','Ring'],['💎','Gem'],['🎁','Present'],['🏷️','Label'],['🔖','Bookmark'],['📚','Books'],['📖','Book'],['✏️','Pencil'],['🖊️','Pen'],['📝','Memo'],['💼','Briefcase'],['📁','Folder'],['📂','Open Folder'],['🗂️','Card Index'],['📅','Calendar'],['🗓️','Spiral Calendar'],['📌','Pushpin'],['📍','Round Pushpin'],['✂️','Scissors'],['📏','Ruler'],['🧲','Magnet'],['🔧','Wrench'],['🔨','Hammer'],['⛏️','Pick'],['🔩','Nut and Bolt'],['⚙️','Gear'],['⚖️','Scale'],['🔗','Link'],['⛓️','Chains']],
   'Animals':[['🐶','Dog'],['🐱','Cat'],['🐭','Mouse'],['🐹','Hamster'],['🐰','Rabbit'],['🦊','Fox'],['🐻','Bear'],['🐼','Panda'],['🐨','Koala'],['🐯','Tiger'],['🦁','Lion'],['🐮','Cow'],['🐷','Pig'],['🐸','Frog'],['🐵','Monkey'],['🐔','Chicken'],['🐧','Penguin'],['🐦','Bird'],['🦅','Eagle'],['🦆','Duck'],['🦉','Owl'],['🦇','Bat'],['🐺','Wolf'],['🐗','Boar'],['🐴','Horse'],['🦄','Unicorn'],['🐝','Bee'],['🪱','Worm'],['🐛','Bug'],['🦋','Butterfly'],['🐌','Snail'],['🪲','Beetle'],['🐜','Ant'],['🐞','Ladybug'],['🦗','Cricket'],['🪳','Cockroach'],['🕷️','Spider'],['🦂','Scorpion'],['🦀','Crab'],['🦞','Lobster'],['🦐','Shrimp'],['🐙','Octopus'],['🦑','Squid']],
-  'Food':['🍕','🍔','🍟','🌭','🥪','🌮','🌯','🥙','🧆','🥘','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦀','🦞','🦐','🍙','🍘','🍚','🍛','🥠','🥮','🍦','🍧','🍨','🍩','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🧇','🥞','🧀','🥚','🍳','🥞','🥓','🥩','🍗','🍖','🦴','🌮','🌯','🥙','🧆','🥗','🥘','🫕','🥫','🍿','🧈','🧂','🥫','🫔','🫓'].map(e=>[e,e]),
-  'Flags & Hands':['🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏴‍☠️','✋🏻','✋🏼','✋🏽','✋🏾','✋🏿','🖐🏻','🖐🏼','🖐🏽','🖐🏾','🖐🏿','👌🏻','👌🏼','👌🏽','👌🏾','👌🏿','👍🏻','👍🏼','👍🏽','👍🏾','👍🏿','👎🏻','👎🏼','👎🏽','👎🏾','👎🏿','✊🏻','✊🏼','✊🏽','✊🏾','✊🏿','👋🏻','👋🏼','👋🏽','👋🏾','👋🏿'].map(e=>[e,e])
+  'Food':[['🍕','Pizza'],['🍔','Burger'],['🍟','Fries'],['🌭','Hot Dog'],['🥪','Sandwich'],['🌮','Taco'],['🌯','Burrito'],['🥙','Stuffed Flatbread'],['🧆','Falafel'],['🥘','Stew'],['🍝','Spaghetti'],['🍜','Noodles'],['🍲','Soup'],['🍛','Curry'],['🍣','Sushi'],['🍱','Bento'],['🥟','Dumpling'],['🍦','Ice Cream'],['🍧','Shaved Ice'],['🍨','Ice Cream Bowl'],['🍩','Donut'],['🍪','Cookie'],['🎂','Birthday Cake'],['🍰 Cake'],['🧁','Cupcake'],['🥧','Pie'],['🍫','Chocolate'],['🍬','Candy'],['🍭','Lollipop'],['🍮','Pudding'],['🧇','Waffle'],['🥞','Pancakes'],['🧀','Cheese'],['🥚','Egg'],['🍳','Fried Egg'],['🥓','Bacon'],['🥩','Steak'],['🍗','Poultry Leg'],['🍖','Meat on Bone'],['🦴','Bone'],['🍿','Popcorn'],['🧈','Butter'],['🧂','Salt']],
+  'Flags & Hands':[['🏁','Chequered Flag'],['🚩','Triangular Flag'],['🎌','Crossed Flags'],['🏴','Black Flag'],['🏳️','White Flag'],['🏳️‍🌈','Rainbow Flag'],['🏴‍☠️','Pirate Flag'],['✋🏻','Hand Lt1'],['✋🏼','Hand Lt2'],['✋🏽','Hand Lt3'],['✋🏾','Hand Lt4'],['✋🏿','Hand Lt5'],['👍🏻','Thumbs Up Lt1'],['👍🏼','Thumbs Up Lt2'],['👍🏽','Thumbs Up Lt3'],['👍🏾','Thumbs Up Lt4'],['👍🏿','Thumbs Up Lt5'],['👋🏻','Wave Lt1'],['👋🏼','Wave Lt2'],['👋🏽','Wave Lt3'],['👋🏾','Wave Lt4'],['👋🏿','Wave Lt5']]
 };
 
-let _emojiTarget=null;
-let _emojiBtnTarget=null;
-let _emojiCategory='Smileys';
+var _emojiTarget=null;
+var _emojiBtnTarget=null;
+var _emojiCategory='Smileys';
+var _previewTimer=null;
+var _lastSentMessageId=null;
+var _sending=false;
 
-function buildEmojiTabs(){
-  const tabs=$('emojiTabs');
-  tabs.innerHTML='';
-  Object.keys(EMOJI_DATA).forEach((cat,i)=>{
-    const t=document.createElement('div');
-    t.className='ep-tab'+(i===0?' active':'');
-    t.textContent=cat;
-    t.onclick=()=>{_emojiCategory=cat;document.querySelectorAll('.ep-tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');renderEmojiGrid();};
-    tabs.appendChild(t);
-  });
-}
+function $(id){return document.getElementById(id)}
+function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
-function renderEmojiGrid(search=''){
-  const grid=$('emojiGrid');
-  const emojis=EMOJI_DATA[_emojiCategory]||[];
-  const filtered=search?emojis.filter(e=>e[1].toLowerCase().includes(search.toLowerCase())):emojis;
-  grid.innerHTML=filtered.map(e=>`<span title="${e[1]}" onclick="insertEmoji('${e[0]}')">${e[0]}</span>`).join('');
-}
-
-function filterEmojis(){
-  renderEmojiGrid($('emojiSearch').value);
-}
-
-function openEmojiPicker(e,target,btnTarget){
-  _emojiTarget=target;
-  _emojiBtnTarget=btnTarget||null;
-  const picker=$('emojiPicker');
-  const rect=e.currentTarget.getBoundingClientRect();
-  picker.style.top=(rect.bottom+4)+'px';
-  picker.style.left=Math.min(rect.left,window.innerWidth-330)+'px';
-  picker.classList.add('open');
-  $('emojiSearch').value='';
-  buildEmojiTabs();
-  renderEmojiGrid();
-  setTimeout(()=>$('emojiSearch').focus(),50);
-}
-
-function openBtnEmojiPicker(e,rowIdx,btnIdx){
-  openEmojiPicker(e,null,{row:rowIdx,btn:btnIdx});
-}
-
-function insertEmoji(emoji){
-  if(_emojiBtnTarget){
-    setButtonEmoji(_emojiBtnTarget.row,_emojiBtnTarget.btn,emoji);
-    closeEmojiPicker();
-    return;
-  }
-  if(_emojiTarget){
-    const el=$(_emojiTarget);
-    const start=el.selectionStart;
-    const end=el.selectionEnd;
-    const val=el.value;
-    el.value=val.substring(0,start)+emoji+val.substring(end);
-    el.selectionStart=el.selectionEnd=start+emoji.length;
-    el.focus();
-    el.dispatchEvent(new Event('input'));
-  }
-  closeEmojiPicker();
-}
-
-function setButtonEmoji(rowIdx,btnIdx,emoji){
-  window._actionButtons[rowIdx][btnIdx].emoji=emoji;
-  renderActionButtons();
-  updatePreview();
-}
-
-function closeEmojiPicker(){
-  $('emojiPicker').classList.remove('open');
-}
-
-function openCustomEmojiModal(){
-  closeEmojiPicker();
-  $('customEmojiName').value='';
-  $('customEmojiId').value='';
-  $('customEmojiAnimated').checked=false;
-  updateCustomEmojiPreview();
-  $('customEmojiModal').classList.add('open');
-}
-
-function updateCustomEmojiPreview(){
-  const name=$('customEmojiName').value||'name';
-  const id=$('customEmojiId').value;
-  const animated=$('customEmojiAnimated').checked;
-  const prefix=animated?'a:':':';
-  $('cepName').textContent=name;
-  $('cepId').textContent=id?':'+id:'';
-  $('cepName').parentElement.parentElement.style.display='';
-}
-
-$('customEmojiName')&&$('customEmojiName').addEventListener('input',updateCustomEmojiPreview);
-$('customEmojiId')&&$('customEmojiId').addEventListener('input',updateCustomEmojiPreview);
-$('customEmojiAnimated')&&$('customEmojiAnimated').addEventListener('change',updateCustomEmojiPreview);
-
-function insertCustomEmoji(){
-  const name=$('customEmojiName').value.trim();
-  const id=$('customEmojiId').value.trim();
-  const animated=$('customEmojiAnimated').checked;
-  if(!name){showToast('Enter an emoji name','error');return;}
-  let emoji;
-  if(id){
-    emoji=animated?`a:${name}:${id}`:`:${name}:${id}`;
-  }else{
-    emoji=`:${name}:`;
-  }
-  closeModal('customEmojiModal');
-  if(_emojiBtnTarget){
-    setButtonEmoji(_emojiBtnTarget.row,_emojiBtnTarget.btn,emoji);
-  }else if(_emojiTarget){
-    const el=$(_emojiTarget);
-    const start=el.selectionStart;
-    const end=el.selectionEnd;
-    el.value=el.value.substring(0,start)+emoji+el.value.substring(end);
-    el.selectionStart=el.selectionEnd=start+emoji.length;
-    el.focus();
-    el.dispatchEvent(new Event('input'));
-  }
-}
-
-document.addEventListener('click',e=>{
-  if(!$('emojiPicker').contains(e.target)&&!e.target.closest('.btn-xs[onclick*="openEmojiPicker"]')&&!e.target.closest('.btn-emoji-display')){
-    closeEmojiPicker();
-  }
-});
-
-const LS={
-  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},
-  set(k,v){localStorage.setItem(k,JSON.stringify(v))}
+var LS={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set:function(k,v){localStorage.setItem(k,JSON.stringify(v))}
 };
 
-const KEYS={
+var KEYS={
   formState:'dws_formState',
   webhooks:'dws_webhooks',
   history:'dws_history',
@@ -808,12 +695,9 @@ const KEYS={
   activeWebhook:'dws_activeWebhook'
 };
 
-function $(id){return document.getElementById(id)}
-function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
-
 function switchTab(tab){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab)});
+  document.querySelectorAll('.tab-content').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab)});
   if(tab==='history')renderHistory();
   if(tab==='templates')renderTemplates();
   if(tab==='webhooks')renderWebhooks();
@@ -821,65 +705,58 @@ function switchTab(tab){
 
 function toggleCollapse(el){
   el.classList.toggle('open');
-  const body=el.nextElementSibling;
+  var body=el.nextElementSibling;
   body.classList.toggle('open');
 }
 
 function toggleEmbed(){
-  const on=$('embedToggle').checked;
-  const body=$('embedBody');
-  const header=$('embedToggle').closest('.panel').querySelector('.collapsible-header');
+  var on=$('embedToggle').checked;
+  var body=$('embedBody');
+  var header=$('embedToggle').closest('.panel').querySelector('.collapsible-header');
   if(on){body.classList.add('open');header.classList.add('open')}
   else{body.classList.remove('open');header.classList.remove('open')}
-  updatePreview();
+  schedulePreview();
 }
 
 function syncColor(from){
   if(from==='picker'){$('embedColor').value=$('embedColorPicker').value}
   else{if(/^#[0-9a-fA-F]{6}$/.test($('embedColor').value))$('embedColorPicker').value=$('embedColor').value}
-  updatePreview();
+  schedulePreview();
 }
 
 function addEmbedField(){
-  const c=$('embedFieldsContainer');
-  const row=document.createElement('div');
+  var c=$('embedFieldsContainer');
+  var row=document.createElement('div');
   row.className='embed-field-row';
-  row.innerHTML=`
-    <div class="field"><label>Name</label><input type="text" class="ef-name" placeholder="Field name"></div>
-    <div class="field"><label>Value</label><input type="text" class="ef-value" placeholder="Field value"></div>
-    <div style="display:flex;align-items:center;gap:4px;padding-bottom:4px">
-      <label class="toggle" style="margin:0"><input type="checkbox" class="ef-inline"><span class="slider"></span></label>
-      <button class="btn btn-xs btn-danger" onclick="this.closest('.embed-field-row').remove();updatePreview()" title="Remove">X</button>
-    </div>`;
+  row.innerHTML='<div class="field"><label>Name</label><input type="text" class="ef-name" placeholder="Field name" oninput="schedulePreview()"></div><div class="field"><label>Value</label><input type="text" class="ef-value" placeholder="Field value" oninput="schedulePreview()"></div><div style="display:flex;align-items:center;gap:4px;padding-bottom:4px"><label class="toggle" style="margin:0"><input type="checkbox" class="ef-inline" onchange="schedulePreview()"><span class="slider"></span></label><button class="btn btn-xs btn-danger" onclick="this.closest(\'.embed-field-row\').remove();schedulePreview()" title="Remove">X</button></div>';
   c.appendChild(row);
-  row.querySelectorAll('input').forEach(i=>i.addEventListener('input',updatePreview));
-  updatePreview();
+  schedulePreview();
 }
 
 function getEmbedFields(){
-  return Array.from($('embedFieldsContainer').querySelectorAll('.embed-field-row')).map(row=>({
-    name:row.querySelector('.ef-name').value,
-    value:row.querySelector('.ef-value').value,
-    inline:row.querySelector('.ef-inline').checked
-  })).filter(f=>f.name||f.value);
+  return Array.from($('embedFieldsContainer').querySelectorAll('.embed-field-row')).map(function(row){
+    return{
+      name:row.querySelector('.ef-name').value,
+      value:row.querySelector('.ef-value').value,
+      inline:row.querySelector('.ef-inline').checked
+    };
+  }).filter(function(f){return f.name||f.value});
 }
 
 window._actionButtons=[[]];
 
 function addActionButton(){
-  const row=window._actionButtons;
-  if(row.length===0)row.push([]);
-  if(row[0].length>=5){showToast('Maximum 5 buttons per row','error');return;}
-  row[0].push({label:'Button',style:5,url:'',emoji:'',customId:'',disabled:false});
+  if(window._actionButtons.length===0)window._actionButtons.push([]);
+  if(window._actionButtons[0].length>=5){showToast('Maximum 5 buttons per row','error');return;}
+  window._actionButtons[0].push({label:'',style:5,url:'',emoji:'',customId:'',disabled:false});
   renderActionButtons();
-  updatePreview();
+  schedulePreview();
 }
 
 function removeActionButton(btnIdx){
   window._actionButtons[0].splice(btnIdx,1);
-  if(window._actionButtons[0].length===0&&window._actionButtons.length===1){/* keep empty row */}
   renderActionButtons();
-  updatePreview();
+  schedulePreview();
 }
 
 function updateActionButton(rowIdx,btnIdx,key,value){
@@ -888,90 +765,87 @@ function updateActionButton(rowIdx,btnIdx,key,value){
     if(value===5)window._actionButtons[rowIdx][btnIdx].customId='';
     else window._actionButtons[rowIdx][btnIdx].url='';
   }
-  updatePreview();
+  schedulePreview();
 }
 
 function renderActionButtons(){
-  const c=$('actionRowsContainer');
-  const btns=window._actionButtons[0]||[];
+  var c=$('actionRowsContainer');
+  var btns=window._actionButtons[0]||[];
   if(!btns.length){c.innerHTML='<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:8px">No buttons added yet</div>';return;}
-  let html='';
-  btns.forEach((btn,i)=>{
-    const isLink=btn.style===5;
-    const isDisabled=btn.disabled;
-    html+=`<div class="btn-item">
-      <select style="width:100px" onchange="updateActionButton(0,${i},'style',parseInt(this.value))">
-        <option value="5"${isLink?' selected':''}>Link</option>
-        <option value="1"${btn.style===1?' selected':''}>Primary</option>
-        <option value="2"${btn.style===2?' selected':''}>Secondary</option>
-        <option value="3"${btn.style===3?' selected':''}>Success</option>
-        <option value="4"${btn.style===4?' selected':''}>Danger</option>
-      </select>
-      ${!isLink?'<span style="color:var(--warning);font-size:11px;white-space:nowrap">&#x26A0; Not supported</span>':''}
-      <label class="toggle" style="margin:0;flex-shrink:0" title="Disabled">
-        <input type="checkbox" ${isDisabled?'checked':''} onchange="updateActionButton(0,${i},'disabled',this.checked)">
-        <span class="slider"></span>
-      </label>
-      <div class="btn-emoji-display" onclick="openBtnEmojiPicker(event,0,${i})" title="Click to set emoji">${btn.emoji||'😀'}</div>
-      <input type="text" value="${esc(btn.label)}" placeholder="Label" oninput="updateActionButton(0,${i},'label',this.value)" style="${!isLink?'width:80px':'width:120px'}">
-      ${isLink?`<input type="url" value="${esc(btn.url)}" placeholder="URL" oninput="updateActionButton(0,${i},'url',this.value)" style="width:180px">`
-        :`<input type="text" value="${esc(btn.customId||'')}" placeholder="Custom ID" oninput="updateActionButton(0,${i},'customId',this.value)" style="width:120px">`}
-      <button class="btn btn-xs btn-danger" onclick="removeActionButton(${i})">X</button>
-    </div>`;
+  var html='';
+  btns.forEach(function(btn,i){
+    var isLink=btn.style===5;
+    var isDisabled=btn.disabled;
+    html+='<div class="btn-item">';
+    html+='<select style="width:100px" onchange="updateActionButton(0,'+i+',\'style\',parseInt(this.value))">';
+    html+='<option value="5"'+(isLink?' selected':'')+'>Link</option>';
+    html+='<option value="1"'+(btn.style===1?' selected':'')+'>Primary</option>';
+    html+='<option value="2"'+(btn.style===2?' selected':'')+'>Secondary</option>';
+    html+='<option value="3"'+(btn.style===3?' selected':'')+'>Success</option>';
+    html+='<option value="4"'+(btn.style===4?' selected':'')+'>Danger</option>';
+    html+='</select>';
+    if(!isLink)html+='<span style="color:var(--warning);font-size:11px;white-space:nowrap">&#x26A0; Not supported</span>';
+    html+='<label class="toggle" style="margin:0;flex-shrink:0" title="Disabled"><input type="checkbox"'+(isDisabled?' checked':'')+' onchange="updateActionButton(0,'+i+',\'disabled\',this.checked)"><span class="slider"></span></label>';
+    html+='<div class="btn-emoji-display" onclick="openBtnEmojiPicker(event,0,'+i+')" title="Click to set emoji">'+(btn.emoji||'😀')+'</div>';
+    html+='<input type="text" value="'+esc(btn.label)+'" placeholder="Button label" oninput="updateActionButton(0,'+i+',\'label\',this.value)" style="'+(!isLink?'width:80px':'width:120px')+'">';
+    if(isLink){
+      html+='<input type="url" value="'+esc(btn.url)+'" placeholder="URL" oninput="updateActionButton(0,'+i+',\'url\',this.value)" style="width:180px">';
+    }else{
+      html+='<input type="text" value="'+esc(btn.customId||'')+'" placeholder="Custom ID" oninput="updateActionButton(0,'+i+',\'customId\',this.value)" style="width:120px">';
+    }
+    html+='<button class="btn btn-xs btn-danger" onclick="removeActionButton('+i+')">X</button>';
+    html+='</div>';
   });
   c.innerHTML=html;
 }
 
 function getActionRows(){
-  if(!window._actionButtons[0]||!window._actionButtons[0].length)return[];
-  const components=[];
-  const row={type:1,components:[]};
-  window._actionButtons[0].forEach(btn=>{
-    const comp={type:2,label:btn.label||'Button',style:btn.style};
+  if(!window._actionButtons[0]||!window._actionButtons[0].length)return [];
+  var row={type:1,components:[]};
+  window._actionButtons[0].forEach(function(btn){
+    if(!btn.label&&!btn.url&&!btn.customId)return;
+    var comp={type:2,label:btn.label||'Button',style:btn.style};
     if(btn.emoji)comp.emoji=parseEmojiForApi(btn.emoji);
     if(btn.style===5&&btn.url)comp.url=btn.url;
     if(btn.style!==5&&btn.customId)comp.custom_id=btn.customId;
     if(btn.disabled)comp.disabled=true;
     row.components.push(comp);
   });
-  if(row.components.length)components.push(row);
-  return components;
+  if(row.components.length)return [row];
+  return [];
 }
 
 function parseEmojiForApi(emoji){
-  const customMatch=emoji.match(/^a?:(.+):(\d+)$/);
+  var customMatch=emoji.match(/^a?:(.+):(\d+)$/);
   if(customMatch){
     return{name:customMatch[1],id:customMatch[2],animated:emoji.startsWith('a:')};
   }
-  const colonMatch=emoji.match(/^:([^:]+):$/);
+  var colonMatch=emoji.match(/^:([^:]+):$/);
   if(colonMatch&&colonMatch[1]&&!/^\d+$/.test(colonMatch[1])){
     return{name:colonMatch[1],id:null,animated:false};
   }
   return{name:emoji,id:null,animated:false};
 }
 
-function isCustomEmoji(str){
-  return/^a?:.+:/.test(str)||/^<a?:.+:d+>$/.test(str);
-}
-
 function handleFileSelect(e){
-  const files=Array.from(e.target.files);
+  var files=Array.from(e.target.files);
   if(!files.length)return;
   if(!window._attachedFiles)window._attachedFiles=[];
   window._attachedFiles=window._attachedFiles.concat(files).slice(0,10);
   e.target.value='';
   renderFileList();
+  schedulePreview();
 }
 
 function removeFile(idx){
   window._attachedFiles.splice(idx,1);
   if(!window._attachedFiles.length)window._attachedFiles=null;
   renderFileList();
-  updatePreview();
+  schedulePreview();
 }
 
 function renderFileList(){
-  const files=window._attachedFiles||[];
+  var files=window._attachedFiles||[];
   $('fileCount').textContent=files.length+' / 10';
   if(!files.length){
     $('fileName').innerHTML='';
@@ -979,26 +853,423 @@ function renderFileList(){
     return;
   }
   $('fileDrop').querySelector('p').textContent=files.length+' file'+(files.length>1?'s':'')+' selected:';
-  let html='<div class="file-list">';
-  files.forEach((f,i)=>{
-    html+=`<div class="file-item"><span>${esc(f.name)} (${(f.size/1024/1024).toFixed(2)} MB)</span><button onclick="removeFile(${i})">&times;</button></div>`;
+  var html='<div class="file-list">';
+  files.forEach(function(f,i){
+    html+='<div class="file-item"><span>'+esc(f.name)+' ('+(f.size/1024/1024).toFixed(2)+' MB)</span><button onclick="removeFile('+i+')">&times;</button></div>';
   });
   html+='</div>';
   $('fileName').innerHTML=html;
 }
 
-$('fileDrop').addEventListener('click',()=>{$('fileInput').click()});
-$('fileDrop').addEventListener('dragover',e=>{e.preventDefault();$('fileDrop').classList.add('dragover')});
-$('fileDrop').addEventListener('dragleave',()=>$('fileDrop').classList.remove('dragover'));
-$('fileDrop').addEventListener('drop',e=>{
+$('fileDrop').addEventListener('click',function(){$('fileInput').click()});
+$('fileDrop').addEventListener('dragover',function(e){e.preventDefault();$('fileDrop').classList.add('dragover')});
+$('fileDrop').addEventListener('dragleave',function(){$('fileDrop').classList.remove('dragover')});
+$('fileDrop').addEventListener('drop',function(e){
   e.preventDefault();$('fileDrop').classList.remove('dragover');
-  const files=Array.from(e.dataTransfer.files);
+  var files=Array.from(e.dataTransfer.files);
   if(!files.length)return;
   if(!window._attachedFiles)window._attachedFiles=[];
   window._attachedFiles=window._attachedFiles.concat(files).slice(0,10);
   renderFileList();
-  updatePreview();
+  schedulePreview();
 });
+
+function buildPayload(){
+  var payload={};
+  var content=$('content').value.trim();
+  if(content)payload.content=content;
+  if($('username').value.trim())payload.username=$('username').value.trim();
+  if($('avatarUrl').value.trim())payload.avatar_url=$('avatarUrl').value.trim();
+  if($('ttsToggle').checked)payload.tts=true;
+
+  var suppressEmbeds=$('suppressEmbeds').checked;
+  var mentionEveryone=$('mentionEveryone').checked;
+  var mentionRoles=$('mentionRoles').checked;
+  var mentionUsers=$('mentionUsers').checked;
+  var mentionParseIds=$('mentionParseIds').value.trim();
+
+  if(suppressEmbeds||!mentionEveryone||!mentionRoles||!mentionUsers||mentionParseIds){
+    var parse=[];
+    if(mentionEveryone)parse.push('everyone');
+    if(mentionRoles)parse.push('roles');
+    if(mentionUsers)parse.push('users');
+    payload.allowed_mentions={parse:parse};
+    if(mentionParseIds){
+      var ids=mentionParseIds.split(',').map(function(s){return s.trim()}).filter(Boolean);
+      var roleIds=ids.filter(function(id){return id.startsWith('r:')}).map(function(id){return id.replace(/^r:/,'')});
+      var userIds=ids.filter(function(id){return !id.startsWith('r:')}).filter(Boolean);
+      if(roleIds.length)payload.allowed_mentions.roles=roleIds;
+      if(userIds.length)payload.allowed_mentions.users=userIds;
+    }
+  }
+  if(suppressEmbeds)payload.flags=4;
+
+  if($('embedToggle').checked){
+    var embed={};
+    if($('embedTitle').value.trim())embed.title=$('embedTitle').value.trim();
+    if($('embedUrl').value.trim())embed.url=$('embedUrl').value.trim();
+    if($('embedDesc').value.trim())embed.description=$('embedDesc').value.trim();
+    var colorVal=parseInt($('embedColor').value.replace('#',''),16);
+    if(!isNaN(colorVal))embed.color=colorVal;
+    if($('embedAuthorName').value.trim()){
+      embed.author={name:$('embedAuthorName').value.trim()};
+      if($('embedAuthorIcon').value.trim())embed.author.icon_url=$('embedAuthorIcon').value.trim();
+      if($('embedAuthorUrl').value.trim())embed.author.url=$('embedAuthorUrl').value.trim();
+    }
+    var fields=getEmbedFields();
+    if(fields.length)embed.fields=fields;
+    if($('embedThumbnail').value.trim())embed.thumbnail={url:$('embedThumbnail').value.trim()};
+    if($('embedImage').value.trim())embed.image={url:$('embedImage').value.trim()};
+    if($('embedFooterText').value.trim()){
+      embed.footer={text:$('embedFooterText').value.trim()};
+      if($('embedFooterIcon').value.trim())embed.footer.icon_url=$('embedFooterIcon').value.trim();
+    }
+    if($('embedTimestamp').checked)embed.timestamp=new Date().toISOString();
+    if(Object.keys(embed).length)payload.embeds=[embed];
+  }
+
+  var actionRows=getActionRows();
+  if(actionRows.length)payload.components=actionRows;
+
+  return payload;
+}
+
+function schedulePreview(){
+  if(_previewTimer)clearTimeout(_previewTimer);
+  _previewTimer=setTimeout(updatePreview,150);
+  saveFormState();
+  updateContentCount();
+  updateEmbedDescCount();
+}
+
+function updateContentCount(){
+  var len=$('content').value.length;
+  var el=$('contentCount');
+  el.textContent=len+' / 2000';
+  el.className='char-count'+(len>2000?' over':len>1800?' warn':'');
+}
+
+function updateEmbedDescCount(){
+  var len=$('embedDesc').value.length;
+  var el=$('embedDescCount');
+  if(el){
+    el.textContent=len+' / 4096';
+    el.className='char-count'+(len>4096?' over':len>3800?' warn':'');
+  }
+}
+
+function renderMarkdown(text){
+  if(!text)return '';
+  var html=esc(text);
+  html=html.replace(/```([\s\S]*?)```/g,function(m,code){return '<pre><code>'+code+'</code></pre>'});
+  html=html.replace(/`([^`]+)`/g,'<code>$1</code>');
+  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  html=html.replace(/~~(.+?)~~/g,'<del>$1</del>');
+  return html;
+}
+
+function updatePreview(){
+  var preview=$('preview');
+  var parts=[];
+
+  var avatarUrl=$('avatarUrl').value.trim();
+  var username=$('username').value.trim()||'Webhook';
+  var content=$('content').value.trim();
+
+  var html='<div class="preview-card">';
+
+  if(avatarUrl){
+    html+='<div style="display:flex;align-items:flex-start;gap:12px">';
+    html+='<img src="'+esc(avatarUrl)+'" style="width:40px;height:40px;border-radius:50%;flex-shrink:0" onerror="this.style.display=\'none\'">';
+    html+='<div style="flex:1;min-width:0">';
+  }
+
+  html+='<div class="preview-username">'+esc(username)+'</div>';
+
+  if($('ttsToggle').checked&&content){
+    html+='<div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">&#x1F50A; Text-to-Speech</div>';
+  }
+
+  if(content){
+    html+='<div class="preview-content">'+renderMarkdown(content)+'</div>';
+  }
+
+  if($('embedToggle').checked){
+    var embedHtml=buildEmbedPreviewHtml();
+    if(embedHtml)html+=embedHtml;
+  }
+
+  var actionRows=getActionRows();
+  if(actionRows.length){
+    html+='<div class="preview-actions">';
+    actionRows[0].components.forEach(function(comp){
+      var cls='action-btn-preview ';
+      if(comp.style===5)cls+='link-btn';
+      else if(comp.style===1)cls+='link-btn';
+      else if(comp.style===2)cls+='secondary-btn';
+      else if(comp.style===3)cls+='success-btn';
+      else if(comp.style===4)cls+='danger-btn';
+      if(comp.disabled)cls+='disabled-btn';
+      var emojiStr='';
+      if(comp.emoji){
+        if(comp.emoji.id)emojiStr='<img src="https://cdn.discordapp.com/emojis/'+comp.emoji.id+'.webp" style="width:16px;height:16px;vertical-align:middle" onerror="this.style.display=\'none\'">';
+        else emojiStr=comp.emoji.name+' ';
+      }
+      html+='<span class="'+cls+'">'+emojiStr+esc(comp.label||'')+'</span>';
+    });
+    html+='</div>';
+  }
+
+  if(avatarUrl)html+='</div></div>';
+
+  if(!content&&!$('embedToggle').checked&&!actionRows.length){
+    html='<div class="preview-card"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>Your message preview will appear here</p></div></div>';
+  }
+
+  html+='</div>';
+  preview.innerHTML=html;
+}
+
+function buildEmbedPreviewHtml(){
+  var embed={};
+  var hasContent=false;
+  if($('embedTitle').value.trim()){embed.title=$('embedTitle').value.trim();hasContent=true;}
+  if($('embedUrl').value.trim())embed.url=$('embedUrl').value.trim();
+  if($('embedDesc').value.trim()){embed.description=$('embedDesc').value.trim();hasContent=true;}
+  var colorVal=parseInt($('embedColor').value.replace('#',''),16);
+  if(!isNaN(colorVal))embed.color=colorVal;
+  if($('embedAuthorName').value.trim()){embed.authorName=$('embedAuthorName').value.trim();hasContent=true;}
+  if($('embedAuthorIcon').value.trim())embed.authorIcon=$('embedAuthorIcon').value.trim();
+  if($('embedAuthorUrl').value.trim())embed.authorUrl=$('embedAuthorUrl').value.trim();
+  var fields=getEmbedFields();
+  if(fields.length)hasContent=true;
+  if($('embedThumbnail').value.trim())embed.thumbnail=$('embedThumbnail').value.trim();
+  if($('embedImage').value.trim()){embed.image=$('embedImage').value.trim();hasContent=true;}
+  if($('embedFooterText').value.trim()){embed.footerText=$('embedFooterText').value.trim();hasContent=true;}
+  if($('embedFooterIcon').value.trim())embed.footerIcon=$('embedFooterIcon').value.trim();
+  if($('embedTimestamp').checked)hasContent=true;
+  if(!hasContent&&!embed.title&&!embed.description)return '';
+
+  var borderColor=isNaN(colorVal)?'var(--accent)':'#'+('000000'+colorVal.toString(16)).slice(-6);
+  var html='<div class="embed-preview" style="border-left-color:'+borderColor+'">';
+
+  if(embed.thumbnail){
+    html+='<img class="embed-thumb" src="'+esc(embed.thumbnail)+'" onerror="this.style.display=\'none\'">';
+  }
+
+  if(embed.authorName){
+    html+='<div class="embed-author">';
+    if(embed.authorIcon)html+='<img src="'+esc(embed.authorIcon)+'" onerror="this.style.display=\'none\'">';
+    if(embed.authorUrl)html+='<a href="'+esc(embed.authorUrl)+'" target="_blank" style="color:var(--accent);text-decoration:none">'+esc(embed.authorName)+'</a>';
+    else html+=esc(embed.authorName);
+    html+='</div>';
+  }
+
+  if(embed.title){
+    if(embed.url)html+='<div class="embed-title"><a href="'+esc(embed.url)+'" target="_blank" style="color:var(--accent);text-decoration:none">'+esc(embed.title)+'</a></div>';
+    else html+='<div class="embed-title">'+esc(embed.title)+'</div>';
+  }
+
+  if(embed.description){
+    html+='<div class="embed-desc">'+renderMarkdown(embed.description)+'</div>';
+  }
+
+  fields.forEach(function(f){
+    var inlineCls=f.inline?' embed-field inline':' embed-field';
+    html+='<div class="'+inlineCls+'"><div class="embed-field-name">'+esc(f.name)+'</div><div class="embed-field-value">'+esc(f.value)+'</div></div>';
+  });
+
+  if(embed.image){
+    html+='<img class="embed-image" src="'+esc(embed.image)+'" onerror="this.style.display=\'none\'">';
+  }
+
+  if(embed.footerText||$('embedTimestamp').checked){
+    html+='<div class="embed-footer">';
+    if(embed.footerIcon)html+='<img src="'+esc(embed.footerIcon)+'" onerror="this.style.display=\'none\'">';
+    html+=esc(embed.footerText||'');
+    if($('embedTimestamp').checked)html+=' &bull; '+new Date().toLocaleDateString()+' '+new Date().toLocaleTimeString();
+    html+='</div>';
+  }
+
+  html+='</div>';
+  return html;
+}
+
+function validateWebhook(){
+  var url=$('webhook').value.trim();
+  var status=$('webhookStatus');
+  if(!url){status.textContent='';status.className='char-count';return;}
+  if(/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[\w-]+/.test(url)){
+    status.textContent='Valid webhook URL';status.className='char-count webhook-valid';
+  }else{
+    status.textContent='Invalid webhook URL';status.className='char-count webhook-invalid';
+  }
+}
+
+function onMessageIdChange(){
+  var val=$('messageId').value.trim();
+  if(val){
+    var parsed=parseMessageId(val);
+    if(parsed&&parsed!==val)$('messageId').value=parsed;
+  }
+  updateSendButton();
+  schedulePreview();
+}
+
+function parseMessageId(input){
+  if(!input)return '';
+  var linkMatch=input.match(/\/channels\/\d+\/\d+\/(\d+)/);
+  if(linkMatch)return linkMatch[1];
+  if(/^\d{17,20}$/.test(input))return input;
+  return input;
+}
+
+function updateSendButton(){
+  var msgId=$('messageId').value.trim();
+  var parsedId=parseMessageId(msgId);
+  var btn=$('sendBtnText');
+  if(parsedId&&parsedId.length>5){
+    btn.textContent='Edit Message';
+  }else{
+    btn.textContent='Send Message';
+  }
+}
+
+function getWebhookUrl(){
+  var url=$('webhook').value.trim();
+  return url;
+}
+
+function sendMessage(){
+  if(_sending)return;
+  var url=getWebhookUrl();
+  if(!url){showToast('Enter a webhook URL','error');return;}
+
+  var msgId=parseMessageId($('messageId').value.trim());
+  var payload=buildPayload();
+  var isEdit=msgId&&msgId.length>5;
+
+  _sending=true;
+  $('sendBtn').disabled=true;
+
+  var endpoint;
+  if(isEdit){
+    endpoint=url+'/messages/'+msgId;
+  }else{
+    endpoint=url+'?wait=true';
+  }
+
+  var hasFiles=window._attachedFiles&&window._attachedFiles.length>0;
+
+  var fetchOptions={method:isEdit?'PATCH':'POST'};
+
+  if(hasFiles){
+    var formData=new FormData();
+    var payloadBlob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+    formData.append('payload_json',payloadBlob,'payload.json');
+    window._attachedFiles.forEach(function(f,i){
+      formData.append('file'+i,f);
+    });
+    fetchOptions.body=formData;
+  }else{
+    fetchOptions.headers={'Content-Type':'application/json'};
+    fetchOptions.body=JSON.stringify(payload);
+  }
+
+  fetch(endpoint,fetchOptions).then(function(r){
+    var remaining=r.headers.get('X-RateLimit-Remaining');
+    var resetAfter=r.headers.get('X-RateLimit-Reset-After');
+    var bucket=r.headers.get('X-RateLimit-Bucket');
+    if(remaining!==null||resetAfter!==null){
+      $('rateLimitInfo').style.display='block';
+      $('rlRemaining').textContent=remaining||'0';
+      $('rlResetAfter').textContent=resetAfter||'?';
+      $('rlBucket').textContent=bucket||'?';
+      if(parseInt(remaining)<=0)$('rlRemaining').classList.add('ratelimited');
+      else $('rlRemaining').classList.remove('ratelimited');
+    }
+    if(!r.ok){
+      return r.json().then(function(err){throw new Error(err.message||'HTTP '+r.status)});
+    }
+    return r.json();
+  }).then(function(data){
+    _sending=false;
+    $('sendBtn').disabled=false;
+    if(data&&data.id){
+      _lastSentMessageId=data.id;
+      addToHistory(payload,data.id,isEdit?'edit':'send',data.channel_id);
+      showToast(isEdit?'Message edited!':'Message sent!','success');
+    }else{
+      showToast(isEdit?'Message edited!':'Message sent!','success');
+      addToHistory(payload,'',isEdit?'edit':'send','');
+    }
+  }).catch(function(err){
+    _sending=false;
+    $('sendBtn').disabled=false;
+    showToast('Error: '+err.message,'error');
+  });
+}
+
+function deleteMessage(){
+  var url=getWebhookUrl();
+  if(!url){showToast('Enter a webhook URL','error');return;}
+  var msgId=parseMessageId($('messageId').value.trim());
+  if(!msgId){showToast('Enter a message ID to delete','error');return;}
+
+  if(!confirm('Delete message '+msgId+'?'))return;
+
+  fetch(url+'/messages/'+msgId,{method:'DELETE'}).then(function(r){
+    if(r.ok||r.status===204){
+      showToast('Message deleted!','success');
+    }else{
+      return r.json().then(function(err){throw new Error(err.message||'HTTP '+r.status)});
+    }
+  }).catch(function(err){
+    showToast('Error: '+err.message,'error');
+  });
+}
+
+function fetchWebhookInfo(){
+  var url=getWebhookUrl();
+  if(!url){showToast('Enter a webhook URL','error');return;}
+
+  fetch(url).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(data){
+    $('webhookInfo').style.display='block';
+    $('whGuild').textContent=data.guild_id||'-';
+    $('whChannel').textContent=data.channel_id||'-';
+    $('whName').textContent=data.name||'-';
+    showToast('Webhook info loaded','success');
+  }).catch(function(err){
+    showToast('Failed to fetch info: '+err.message,'error');
+  });
+}
+
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  updateThemeIcon();
+  saveFormState();
+}
+
+function updateThemeIcon(){
+  var isLight=document.body.classList.contains('light');
+  $('themeBtn').innerHTML=isLight?'&#9788;':'&#9790;';
+}
+
+function showToast(msg,type){
+  var t=$('toast');
+  t.textContent=msg;
+  t.className='toast '+type;
+  requestAnimationFrame(function(){
+    t.classList.add('visible');
+    setTimeout(function(){t.classList.remove('visible')},3000);
+  });
+}
+
+function closeModal(id){$(id).classList.remove('open')}
 
 function getFormState(){
   return{
@@ -1061,648 +1332,511 @@ function setFormState(s){
   $('embedFooterIcon').value=s.embedFooterIcon||'';
   $('embedTimestamp').checked=s.embedTimestamp!==undefined?s.embedTimestamp:true;
   if(s.embedEnabled)toggleEmbed();
-  const c=$('embedFieldsContainer');
+  var c=$('embedFieldsContainer');
   c.innerHTML='';
-  (s.embedFields||[]).forEach(f=>{
+  (s.embedFields||[]).forEach(function(f){
     addEmbedField();
-    const row=c.lastElementChild;
+    var row=c.lastElementChild;
     row.querySelector('.ef-name').value=f.name||'';
     row.querySelector('.ef-value').value=f.value||'';
     row.querySelector('.ef-inline').checked=f.inline||false;
   });
-  window._actionButtons=s.actionButtons?[JSON.parse(JSON.stringify(s.actionButtons))]:[[]];
+  window._actionButtons=s.actionButtons?JSON.parse(JSON.stringify(s.actionButtons)):[[]];
   if(!window._actionButtons[0])window._actionButtons=[[]];
+  if(window._actionButtons[0].length){
+    window._actionButtons[0]=window._actionButtons[0].filter(function(b){return b.label||b.url||b.customId});
+    if(!window._actionButtons[0].length)window._actionButtons=[[]];
+  }
   renderActionButtons();
   if(s.buttonsExpanded){
-    const btnPanel=$('buttonsBody').closest('.panel');
+    var btnPanel=$('buttonsBody').closest('.panel');
     btnPanel.querySelector('.collapsible-header').classList.add('open');
     $('buttonsBody').classList.add('open');
   }
   validateWebhook();
+  updateSendButton();
   updatePreview();
+  updateContentCount();
+  updateEmbedDescCount();
 }
 
 function saveFormState(){LS.set(KEYS.formState,getFormState())}
-function restoreFormState(){setFormState(LS.get(KEYS.formState,null))}
 
-let _previewTimer;
-function schedulePreview(){clearTimeout(_previewTimer);_previewTimer=setTimeout(updatePreview,100)}
-
-function renderBtnStyle(style){
-  const map={1:'Primary',2:'Secondary',3:'Success',4:'Danger',5:'Link'};
-  return map[style]||'Primary';
+function restoreFormState(){
+  var state=LS.get(KEYS.formState,null);
+  if(state)setFormState(state);
 }
 
-function getBtnClass(style){
-  const map={1:'link-btn',2:'secondary-btn',3:'success-btn',4:'danger-btn',5:'link-btn'};
-  return map[style]||'link-btn';
-}
-
-function getEmojiDisplay(emoji){
-  if(!emoji)return'';
-  if(/^a?:[^:]+:\d+$/.test(emoji)){
-    const m=emoji.match(/^a?:([^:]+):(\d+)$/);
-    return `<img src="https://cdn.discordapp.com/emojis/${m[2]}.png" style="width:16px;height:16px;vertical-align:middle" onerror="this.textContent='${emoji}'">`;
-  }
-  if(/^:[^:]+:$/.test(emoji))return emoji;
-  return emoji;
-}
-
-function updatePreview(){
-  const content=$('content').value;
-  const username=$('username').value;
-  const showEmbed=$('embedToggle').checked;
-  const eTitle=$('embedTitle').value;
-  const eDesc=$('embedDesc').value;
-  const eAuthor=$('embedAuthorName').value;
-  const eAuthorIcon=$('embedAuthorIcon').value;
-  const eThumbnail=$('embedThumbnail').value;
-  const eImage=$('embedImage').value;
-  const eFooterText=$('embedFooterText').value;
-  const eFooterIcon=$('embedFooterIcon').value;
-  const eColor=$('embedColor').value||'#5865f2';
-  const eTimestamp=$('embedTimestamp').checked;
-  const fields=getEmbedFields();
-  const btns=(window._actionButtons[0]||[]);
-
-  if(!content&&!showEmbed&&!btns.length){
-    $('preview').innerHTML='<div class="preview-card"><div class="empty-state"><p>Your message preview will appear here</p></div></div>';
-    return;
-  }
-
-  let html='<div class="preview-card">';
-  if(content||username){
-    if(username)html+=`<div class="preview-username">${esc(username)}</div>`;
-    if(content)html+=`<div class="preview-content">${renderMarkdown(content)}</div>`;
-  }
-
-  if(showEmbed&&(eTitle||eDesc||eAuthor||fields.length||eImage||eThumbnail||eFooterText)){
-    html+=`<div class="embed-preview" style="border-left-color:${esc(eColor)}">`;
-    if(eThumbnail)html+=`<img class="embed-thumb" src="${esc(eThumbnail)}" onerror="this.style.display='none'">`;
-    if(eAuthor){
-      html+='<div class="embed-author">';
-      if(eAuthorIcon)html+=`<img src="${esc(eAuthorIcon)}" onerror="this.style.display='none'">`;
-      html+=esc(eAuthor)+'</div>';
-    }
-    if(eTitle){
-      const eUrl=$('embedUrl').value;
-      if(eUrl)html+=`<div class="embed-title"><a href="${esc(eUrl)}" target="_blank" style="color:var(--accent)">${esc(eTitle)}</a></div>`;
-      else html+=`<div class="embed-title">${esc(eTitle)}</div>`;
-    }
-    if(eDesc)html+=`<div class="embed-desc">${renderMarkdown(eDesc)}</div>`;
-    if(fields.length){
-      html+='<div style="margin-top:8px">';
-      fields.forEach(f=>{
-        if(!f.name&&!f.value)return;
-        const cls=f.inline?' embed-field inline':' embed-field';
-        html+=`<div class="${cls}"><div class="embed-field-name">${esc(f.name||'\u200b')}</div><div class="embed-field-value">${renderMarkdown(f.value||'\u200b')}</div></div>`;
-      });
-      html+='</div>';
-    }
-    if(eImage)html+=`<img class="embed-image" src="${esc(eImage)}" onerror="this.style.display='none'">`;
-    html+='<div style="clear:both"></div>';
-    if(eFooterText||eTimestamp){
-      html+='<div class="embed-footer">';
-      if(eFooterIcon)html+=`<img src="${esc(eFooterIcon)}" onerror="this.style.display='none'">`;
-      if(eFooterText)html+=esc(eFooterText);
-      if(eTimestamp)html+=(eFooterText?' \u2022 ':'')+new Date().toLocaleString();
-      html+='</div>';
-    }
-    html+='</div>';
-  }
-
-  if(btns.length){
-    html+='<div class="preview-actions"><div class="action-row-preview">';
-    btns.forEach(btn=>{
-      const cls=getBtnClass(btn.style);
-      const disabledCls=btn.disabled?' disabled-btn':'';
-      const emojiHtml=btn.emoji?`<span class="btn-emoji">${getEmojiDisplay(btn.emoji)}</span> `:'';
-      html+=`<span class="action-btn-preview ${cls}${disabledCls}">${emojiHtml}${esc(btn.label||'Button')}</span>`;
-    });
-    html+='</div></div>';
-  }
-
-  html+='</div>';
-  $('preview').innerHTML=html;
-
-  $('contentCount').textContent=`${content.length} / 2000`;
-  $('contentCount').className='char-count'+(content.length>2000?' over':content.length>1800?' warn':'');
-  $('embedDescCount').textContent=`${$('embedDesc').value.length} / 4096`;
-  $('embedDescCount').className='char-count'+($('embedDesc').value.length>4096?' over':$('embedDesc').value.length>3800?' warn':'');
-
-  saveFormState();
-}
-
-function validateWebhook(){
-  const url=$('webhook').value.trim();
-  const s=$('webhookStatus');
-  if(!url){s.textContent='';s.className='char-count';return;}
-  if(/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(url)){
-    s.textContent='Valid webhook URL';s.className='char-count';s.style.color='var(--success)';
-  }else{
-    s.textContent='Invalid webhook URL format';s.className='char-count';s.style.color='var(--error)';
-  }
-}
-
-function buildPayload(){
-  const p={};
-  const content=$('content').value.trim();
-  const username=$('username').value.trim();
-  const avatarUrl=$('avatarUrl').value.trim();
-  const tts=$('ttsToggle').checked;
-  const suppressEmbeds=$('suppressEmbeds').checked;
-
-  if(username)p.username=username;
-  if(avatarUrl)p.avatar_url=avatarUrl;
-  if(content)p.content=content;
-  if(tts)p.tts=true;
-  if(suppressEmbeds)p.flags=4;
-
-  const mentionEveryone=$('mentionEveryone').checked;
-  const mentionRoles=$('mentionRoles').checked;
-  const mentionUsers=$('mentionUsers').checked;
-  const parseIds=$('mentionParseIds').value.trim();
-  if(!mentionEveryone||!mentionRoles||!mentionUsers||parseIds){
-    const am={parse:[]};
-    if(mentionEveryone)am.parse.push('everyone');
-    if(mentionRoles)am.parse.push('roles');
-    if(mentionUsers)am.parse.push('users');
-    const roleIds=[];const userIds=[];
-    if(parseIds){
-      parseIds.split(',').map(s=>s.trim()).filter(Boolean).forEach(id=>{
-        if(id.startsWith('<@&'))roleIds.push(id.replace(/[<@&>]/g,''));
-        else if(id.startsWith('<@'))userIds.push(id.replace(/[<@>]/g,''));
-        else if(/^\d+$/.test(id))userIds.push(id);
-      });
-    }
-    if(roleIds.length)am.roles=roleIds;
-    if(userIds.length)am.users=userIds;
-    if(am.parse.length||am.roles||am.users)p.allowed_mentions=am;
-  }
-
-  if($('embedToggle').checked){
-    const embed={};
-    const t=$('embedTitle').value.trim();
-    const d=$('embedDesc').value.trim();
-    const url=$('embedUrl').value.trim();
-    const color=$('embedColor').value.trim();
-    const an=$('embedAuthorName').value.trim();
-    const ai=$('embedAuthorIcon').value.trim();
-    const au=$('embedAuthorUrl').value.trim();
-    const thumb=$('embedThumbnail').value.trim();
-    const img=$('embedImage').value.trim();
-    const ft=$('embedFooterText').value.trim();
-    const fi=$('embedFooterIcon').value.trim();
-    const ts=$('embedTimestamp').checked;
-    const fields=getEmbedFields();
-
-    if(an){embed.author={name:an};if(ai)embed.author.icon_url=ai;if(au)embed.author.url=au}
-    if(t){embed.title=t;if(url)embed.url=url}
-    if(d)embed.description=d;
-    if(color)embed.color=parseInt(color.replace('#',''),16);
-    if(thumb)embed.thumbnail={url:thumb};
-    if(img)embed.image={url:img};
-    if(ft){embed.footer={text:ft};if(fi)embed.footer.icon_url=fi}
-    if(ts)embed.timestamp=new Date().toISOString();
-    if(fields.length)embed.fields=fields.filter(f=>f.name||f.value).map(f=>({name:f.name||'\u200b',value:f.value||'\u200b',inline:f.inline}));
-
-    if(Object.keys(embed).length)p.embeds=[embed];
-  }
-
-  const components=getActionRows();
-  if(components.length)p.components=components;
-
-  return p;
-}
-
-async function sendMessage(){
-  const url=$('webhook').value.trim();
-  if(!url){showToast('Please enter a webhook URL','error');return;}
-
-  const rawMsgId=$('messageId').value.trim();
-  const msgId=rawMsgId?parseMessageId(rawMsgId):'';
-  if(rawMsgId&&rawMsgId!==msgId)$('messageId').value=msgId;
-  const isEdit=msgId!=='';
-  updateSendButton();
-  const payload=buildPayload();
-
-  if(!payload.content&&!payload.embeds&&!payload.components&&!window._attachedFiles){
-    showToast('Message cannot be empty','error');return;
-  }
-
-  if(payload.components){
-    const hasNonLink=payload.components.some(row=>row.components.some(c=>c.style!==5));
-    if(hasNonLink){
-      if(!confirm('Non-link buttons (Primary, Secondary, Success, Danger) are NOT supported by Discord webhooks and will cause the API to reject the message.\n\nOnly Link buttons work with webhooks. Do you want to send anyway?'))return;
+function migrateFormData(){
+  var state=LS.get(KEYS.formState,null);
+  if(!state)return;
+  var dirty=false;
+  if(state.actionButtons&&state.actionButtons[0]){
+    var filtered=state.actionButtons[0].filter(function(b){return b.label||b.url||b.customId});
+    if(filtered.length!==state.actionButtons[0].length){
+      state.actionButtons[0]=filtered;
+      if(!state.actionButtons[0].length)state.actionButtons=[[]];
+      dirty=true;
     }
   }
-
-  const btn=$('sendBtn');
-  btn.disabled=true;
-  btn.innerHTML='<span class="spinner"></span> Working...';
-
-  try{
-    let res;
-    const baseUrl=url.endsWith('/')?url.slice(0,-1):url;
-    const waitParam=isEdit?'':'?wait=true';
-    if(window._attachedFiles&&window._attachedFiles.length){
-      const fd=new FormData();
-      fd.append('payload_json',JSON.stringify(payload));
-      window._attachedFiles.forEach((f,i)=>fd.append(`file${i}`,f));
-      const endpoint=isEdit?`${baseUrl}/messages/${msgId}`:`${baseUrl}${waitParam}`;
-      res=await fetch(endpoint,{method:isEdit?'PATCH':'POST',body:fd});
-    }else{
-      const endpoint=isEdit?`${baseUrl}/messages/${msgId}`:`${baseUrl}${waitParam}`;
-      res=await fetch(endpoint,{
-        method:isEdit?'PATCH':'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload)
-      });
-    }
-
-    renderRateLimit(res.headers);
-
-    if(res.status===204||(res.status>=200&&res.status<300)){
-      let msgIdOut='';
-      try{const data=await res.json();if(data&&data.id)msgIdOut=data.id}catch{}
-      if(msgIdOut){
-        $('messageId').value=msgIdOut;
-        LS.set('dws_lastMessageId',msgIdOut);
-        updateSendButton();
-        showToast(isEdit?'Message updated!':'Message sent! (ID: '+msgIdOut+')','success');
-      }else{
-        showToast(isEdit?'Message updated!':'Message sent!','success');
-      }
-      addHistory({url,payload,messageId:msgIdOut,type:isEdit?'edit':'send',timestamp:new Date().toISOString()});
-      refreshRecentMsgIds();
-    }else{
-      const text=await res.text().catch(()=>'');
-      showToast(`Failed: ${res.status} ${text||res.statusText}`,'error');
-    }
-  }catch(err){
-    showToast(`Error: ${err.message}`,'error');
-  }finally{
-    btn.disabled=false;
-    updateSendButton();
-  }
+  if(dirty)LS.set(KEYS.formState,state);
 }
-
-async function deleteMessage(){
-  const url=$('webhook').value.trim();
-  let msgId=$('messageId').value.trim();
-  if(!url){showToast('Enter a webhook URL','error');return;}
-  if(!msgId){showToast('Enter a message ID or link to delete','error');return;}
-  msgId=parseMessageId(msgId);
-  $('messageId').value=msgId;
-  try{
-    const res=await fetch(`${url}/messages/${msgId}`,{method:'DELETE'});
-    if(res.status==204||res.ok){showToast('Message deleted!','success');$('messageId').value='';saveFormState();updateSendButton();}
-    else showToast('Failed to delete message','error');
-  }catch(err){showToast(`Error: ${err.message}`,'error')}
-}
-
-function loadLastMessageId(){
-  const last=LS.get('dws_lastMessageId','');
-  if(last)$('messageId').value=last;
-  else showToast('No previous message ID found','error');
-}
-
-function refreshRecentMsgIds(){
-  const h=LS.get(KEYS.history,[]);
-  const sel=$('recentMsgIds');
-  const seen=new Set();
-  const opts=[{value:'',label:'Recent IDs'}];
-  h.forEach(item=>{
-    if(item.messageId&&!seen.has(item.messageId)){
-      seen.add(item.messageId);
-      const label=item.messageId+((item.payload||{}).content?' - '+(item.payload.content||'').substring(0,30):'');
-      opts.push({value:item.messageId,label});
-    }
-  });
-  sel.innerHTML=opts.map(o=>`<option value="${esc(o.value)}">${esc(o.label.substring(0,50))}</option>`).join('');
-}
-
-function selectRecentMsgId(){
-  const v=$('recentMsgIds').value;
-  if(v)$('messageId').value=v;
-}
-
-function updateSendButton(){
-  const btn=$('sendBtn');
-  const hasId=$('messageId').value.trim()!=='';
-  const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
-  btn.innerHTML=icon+(hasId?' Edit Message':' Send Message');
-}
-
-$('messageId').addEventListener('input',updateSendButton);
-
-function parseMessageId(input){
-  const s=input.trim();
-  const m=s.match(/^https?:\/\/(?:discord(?:app)?\.com)\/channels\/\d+\/\d+\/(\d+)$/i);
-  if(m)return m[1];
-  if(/^\d+$/.test(s))return s;
-  return s;
-}
-
-$('messageId').addEventListener('blur',function(){
-  const v=this.value.trim();
-  if(!v)return;
-  const parsed=parseMessageId(v);
-  if(parsed!==v){this.value=parsed;showToast('Extracted message ID from link','success');}
-});
-
-function sendAsEdit(){
-  const url=$('webhook').value.trim();
-  const rawMsgId=$('messageId').value.trim();
-  if(!url){showToast('Enter a webhook URL','error');return;}
-  if(!rawMsgId){showToast('Enter a message ID or link to edit','error');return;}
-  $('messageId').value=parseMessageId(rawMsgId);
-  sendMessage();
-}
-
-function addHistory(entry){
-  const h=LS.get(KEYS.history,[]);
-  h.unshift(entry);
-  if(h.length>50)h.length=50;
-  LS.set(KEYS.history,h);
-}
-
-function renderHistory(){
-  const h=LS.get(KEYS.history,[]);
-  const el=$('historyList');
-  if(!h.length){el.innerHTML='<div class="empty-state"><p>No messages sent yet</p></div>';return;}
-  el.innerHTML=h.map((item,i)=>{
-    const d=new Date(item.timestamp);
-    const typeLabel=item.type==='edit'?'(edited)':'(sent)';
-    const content=item.payload.content||(item.payload.embeds&&item.payload.embeds[0]&&item.payload.embeds[0].title)||'Embed only';
-    const hasBtns=item.payload.components&&item.payload.components.length;
-    const msgId=item.messageId||'';
-    return `<div class="history-item">
-      <div class="meta">
-        <span style="font-size:11px;color:var(--text-muted)">${esc(d.toLocaleString())} ${typeLabel}</span>
-        ${msgId?`<span style="font-size:11px;color:var(--accent)">ID: ${esc(msgId)}</span>`:''}
-      </div>
-      <div class="msg-body">${esc(content.substring(0,200))}${hasBtns?' <span style="color:var(--accent);font-size:11px">[buttons]</span>':''}</div>
-      <div class="msg-actions">
-        <button class="btn btn-xs btn-secondary" onclick="loadHistoryItem(${i})">Load</button>
-        ${msgId?`<button class="btn btn-xs btn-warning" onclick="editHistoryItem(${i})">Edit</button>`:''}
-        <button class="btn btn-xs btn-danger" onclick="deleteHistoryItem(${i})">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function loadHistoryItem(i){
-  const h=LS.get(KEYS.history,[]);
-  const item=h[i];
-  if(!item)return;
-  $('webhook').value=item.url||'';
-  $('messageId').value=item.messageId||'';
-  if(item.payload.username)$('username').value=item.payload.username;
-  if(item.payload.avatar_url)$('avatarUrl').value=item.payload.avatar_url;
-  if(item.payload.content)$('content').value=item.payload.content;
-  $('ttsToggle').checked=!!item.payload.tts;
-  if(item.payload.embeds&&item.payload.embeds[0]){
-    const e=item.payload.embeds[0];
-    $('embedToggle').checked=true;toggleEmbed();
-    $('embedAuthorName').value=e.author?.name||'';
-    $('embedAuthorIcon').value=e.author?.icon_url||'';
-    $('embedAuthorUrl').value=e.author?.url||'';
-    $('embedTitle').value=e.title||'';
-    $('embedUrl').value=e.url||'';
-    $('embedDesc').value=e.description||'';
-    $('embedThumbnail').value=e.thumbnail?.url||'';
-    $('embedImage').value=e.image?.url||'';
-    $('embedFooterText').value=e.footer?.text||'';
-    $('embedFooterIcon').value=e.footer?.icon_url||'';
-    $('embedTimestamp').checked=!!e.timestamp;
-    if(e.color!==undefined){const hex='#'+e.color.toString(16).padStart(6,'0');$('embedColor').value=hex;$('embedColorPicker').value=hex;}
-    $('embedFieldsContainer').innerHTML='';
-    (e.fields||[]).forEach(f=>{addEmbedField();const row=$('embedFieldsContainer').lastElementChild;row.querySelector('.ef-name').value=f.name==='\u200b'?'':f.name;row.querySelector('.ef-value').value=f.value==='\u200b'?'':f.value;row.querySelector('.ef-inline').checked=!!f.inline;});
-  }
-  if(item.payload.components&&item.payload.components[0]){
-    window._actionButtons=[item.payload.components[0].components.map(c=>({
-      label:c.label||'',
-      style:c.style,
-      url:c.url||'',
-      emoji:c.emoji?(c.emoji.id?`a:${c.emoji.name}:${c.emoji.id}`:`:${c.emoji.name}:`):'',
-      customId:c.custom_id||'',
-      disabled:!!c.disabled
-    }))];
-    renderActionButtons();
-    const btnPanel=$('buttonsBody').closest('.panel');
-    btnPanel.querySelector('.collapsible-header').classList.add('open');
-    $('buttonsBody').classList.add('open');
-  }
-  validateWebhook();updatePreview();switchTab('compose');updateSendButton();showToast('Message loaded into composer','success');
-}
-
-function applyTheme(theme){
-  if(theme==='light')document.body.classList.add('light');
-  else document.body.classList.remove('light');
-  $('themeBtn').textContent=theme==='light'?'\u2600':'\u263E';
-}
-
-function toggleTheme(){
-  const isLight=document.body.classList.toggle('light');
-  $('themeBtn').textContent=isLight?'\u2600':'\u263E';
-  saveFormState();
-}
-
-function editHistoryItem(i){
-  loadHistoryItem(i);
-  showToast('Ready to edit - message ID loaded','success');
-}
-
-function deleteHistoryItem(i){const h=LS.get(KEYS.history,[]);h.splice(i,1);LS.set(KEYS.history,h);renderHistory();}
-function clearHistory(){if(!confirm('Clear all message history?'))return;LS.set(KEYS.history,[]);renderHistory();}
-
-function saveAsTemplate(){$('templateName').value='';$('templateModal').classList.add('open');}
-function confirmSaveTemplate(){
-  const name=$('templateName').value.trim();
-  if(!name){showToast('Enter a template name','error');return;}
-  const templates=LS.get(KEYS.templates,[]);
-  templates.push({name,state:getFormState(),createdAt:new Date().toISOString()});
-  LS.set(KEYS.templates,templates);closeModal('templateModal');showToast('Template saved!','success');
-}
-
-function renderTemplates(){
-  const templates=LS.get(KEYS.templates,[]);
-  const el=$('templateList');
-  if(!templates.length){el.innerHTML='<div class="empty-state"><p>No templates saved yet.</p></div>';return;}
-  el.innerHTML=templates.map((t,i)=>`
-    <div class="template-card" onclick="loadTemplate(${i})">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div class="t-name">${esc(t.name)}</div><div class="t-info">${esc(new Date(t.createdAt).toLocaleString())}</div></div>
-        <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();deleteTemplate(${i})">Delete</button>
-      </div>
-    </div>`).join('');
-}
-
-function loadTemplate(i){const templates=LS.get(KEYS.templates,[]);if(!templates[i])return;setFormState(templates[i].state);switchTab('compose');showToast('Template loaded','success');}
-function deleteTemplate(i){const templates=LS.get(KEYS.templates,[]);templates.splice(i,1);LS.set(KEYS.templates,templates);renderTemplates();}
-
-function addWebhook(){
-  const name=$('newWebhookName').value.trim();const url=$('newWebhookUrl').value.trim();
-  const username=$('newWebhookUsername').value.trim();const avatar=$('newWebhookAvatar').value.trim();
-  if(!name||!url){showToast('Enter a name and URL','error');return;}
-  const webhooks=LS.get(KEYS.webhooks,[]);webhooks.push({name,url,username,avatar,createdAt:new Date().toISOString()});
-  LS.set(KEYS.webhooks,webhooks);$('newWebhookName').value='';$('newWebhookUrl').value='';$('newWebhookUsername').value='';$('newWebhookAvatar').value='';renderWebhooks();refreshWebhookSelect();showToast('Profile saved!','success');
-}
-
-function renderWebhooks(){
-  const webhooks=LS.get(KEYS.webhooks,[]);const el=$('webhookList');
-  if(!webhooks.length){el.innerHTML='<div class="empty-state"><p>No saved profiles yet.</p></div>';return;}
-  el.innerHTML=webhooks.map((w,i)=>{
-    const sub=[];if(w.username)sub.push(esc(w.username));if(w.avatar)sub.push('Custom Avatar');
-    return `<div class="saved-webhook ${LS.get(KEYS.activeWebhook,'')===i.toString()?'active':''}" onclick="selectWebhook(${i})">
-      <div style="flex:1;min-width:0"><div class="name">${esc(w.name)}</div><div class="url" title="${esc(w.url)}">${esc(w.url)}</div>${sub.length?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px">${sub.join(' · ')}</div>`:''}</div>
-      <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();deleteWebhook(${i})">Delete</button>
-    </div>`}).join('');
-}
-
-function selectWebhook(i){const webhooks=LS.get(KEYS.webhooks,[]);if(!webhooks[i])return;$('webhook').value=webhooks[i].url;if(webhooks[i].username)$('username').value=webhooks[i].username;if(webhooks[i].avatar)$('avatarUrl').value=webhooks[i].avatar;LS.set(KEYS.activeWebhook,i.toString());validateWebhook();updatePreview();renderWebhooks();}
-function deleteWebhook(i){const webhooks=LS.get(KEYS.webhooks,[]);webhooks.splice(i,1);LS.set(KEYS.webhooks,webhooks);LS.set(KEYS.activeWebhook,'');renderWebhooks();refreshWebhookSelect();}
-function refreshWebhookSelect(){const webhooks=LS.get(KEYS.webhooks,[]);const sel=$('savedWebhookSelect');sel.innerHTML='<option value="">-- Select a saved profile --</option>'+webhooks.map((w,i)=>{const suffix=w.username?` (${w.username})`:'';return`<option value="${i}">${esc(w.name)}${suffix}</option>`}).join('');}
-function loadSavedWebhook(){const i=$('savedWebhookSelect').value;if(i==='')return;selectWebhook(parseInt(i));}
-
-function saveCurrentAsProfile(){
-  const url=$('webhook').value.trim();
-  const username=$('username').value.trim();
-  const avatar=$('avatarUrl').value.trim();
-  if(!url){showToast('Enter a webhook URL first','error');return;}
-  const name=username||'Profile '+(LS.get(KEYS.webhooks,[]).length+1);
-  const webhooks=LS.get(KEYS.webhooks,[]);
-  webhooks.push({name,url,username,avatar,createdAt:new Date().toISOString()});
-  LS.set(KEYS.webhooks,webhooks);renderWebhooks();refreshWebhookSelect();
-  $('savedWebhookSelect').value=webhooks.length-1;
-  showToast('Profile saved!','success');
-}
-function closeModal(id){$(id).classList.remove('open');}
 
 function clearForm(){
-  if(!confirm('Clear the entire form?'))return;
-  $('webhook').value='';$('username').value='';$('avatarUrl').value='';$('content').value='';
-  $('ttsToggle').checked=false;$('suppressEmbeds').checked=false;
-  $('mentionEveryone').checked=false;$('mentionRoles').checked=false;$('mentionUsers').checked=true;
+  $('webhook').value='';
+  $('username').value='';
+  $('avatarUrl').value='';
+  $('content').value='';
+  $('ttsToggle').checked=false;
+  $('suppressEmbeds').checked=false;
+  $('mentionEveryone').checked=false;
+  $('mentionRoles').checked=false;
+  $('mentionUsers').checked=true;
   $('mentionParseIds').value='';
-  $('messageId').value='';$('embedToggle').checked=false;
-  $('embedAuthorName').value='';$('embedAuthorIcon').value='';$('embedAuthorUrl').value='';
-  $('embedTitle').value='';$('embedUrl').value='';$('embedDesc').value='';
-  $('embedThumbnail').value='';$('embedImage').value='';
-  $('embedColor').value='#5865f2';$('embedColorPicker').value='#5865f2';
-  $('embedFooterText').value='';$('embedFooterIcon').value='';$('embedTimestamp').checked=true;
+  $('messageId').value='';
+  $('embedToggle').checked=false;
+  $('embedAuthorName').value='';
+  $('embedAuthorIcon').value='';
+  $('embedAuthorUrl').value='';
+  $('embedTitle').value='';
+  $('embedUrl').value='';
+  $('embedDesc').value='';
+  $('embedThumbnail').value='';
+  $('embedImage').value='';
+  $('embedColor').value='#5865f2';
+  $('embedColorPicker').value='#5865f2';
+  $('embedFooterText').value='';
+  $('embedFooterIcon').value='';
+  $('embedTimestamp').checked=true;
   $('embedFieldsContainer').innerHTML='';
-  $('webhookInfo').style.display='none';
+  window._actionButtons=[[]];
+  window._attachedFiles=null;
+  renderActionButtons();
+  renderFileList();
   $('rateLimitInfo').style.display='none';
-  window._actionButtons=[[]];renderActionButtons();
-  window._attachedFiles=null;renderFileList();
-  $('fileInput').value='';$('webhookStatus').textContent='';
-  toggleEmbed();updatePreview();updateSendButton();
+  $('webhookInfo').style.display='none';
+  validateWebhook();
+  updateSendButton();
+  updatePreview();
+  updateContentCount();
+  updateEmbedDescCount();
+  saveFormState();
+  showToast('Form cleared','success');
 }
 
 function copyPayload(){
-  const payload=buildPayload();
-  const json=JSON.stringify(payload,null,2);
-  navigator.clipboard.writeText(json).then(()=>showToast('JSON copied to clipboard!','success')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=json;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('JSON copied!','success');
+  var payload=buildPayload();
+  navigator.clipboard.writeText(JSON.stringify(payload,null,2)).then(function(){
+    showToast('JSON payload copied!','success');
+  }).catch(function(){
+    showToast('Failed to copy','error');
   });
 }
 
-async function fetchWebhookInfo(){
-  const url=$('webhook').value.trim();
-  if(!url){showToast('Enter a webhook URL first','error');return;}
-  try{
-    const res=await fetch(url);
-    if(!res.ok){showToast('Invalid webhook or fetch failed','error');return;}
-    const data=await res.json();
-    $('whGuild').textContent=data.guild_id||'-';
-    $('whChannel').textContent=data.channel_id||'-';
-    $('whName').textContent=data.name||'-';
-    $('webhookInfo').style.display='';
-    if(data.name)$('username').value=data.name;
-    if(data.avatar)$('avatarUrl').value=`https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`;
-    showToast('Webhook info loaded!','success');
-  }catch(err){showToast('Failed to fetch: '+err.message,'error');}
-}
-
-function renderMarkdown(text){
-  if(!text)return'';
-  let html=esc(text);
-  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
-  html=html.replace(/__(.+?)__/g,'<u>$1</u>');
-  html=html.replace(/~~(.+?)~~/g,'<del>$1</del>');
-  html=html.replace(/`([^`]+)`/g,'<code style="background:var(--bg-input);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
-  html=html.replace(/```([\s\S]*?)```/g,'<pre style="background:var(--bg-input);padding:8px;border-radius:4px;overflow-x:auto;font-size:12px;margin:4px 0"><code>$1</code></pre>');
-  return html;
-}
-
-function renderRateLimit(headers){
-  const el=$('rateLimitInfo');
-  const remaining=headers.get('X-RateLimit-Remaining');
-  const resetAfter=headers.get('X-RateLimit-Reset-After');
-  const bucket=headers.get('X-RateLimit-Bucket');
-  if(remaining!==null){
-    $('rlRemaining').textContent=remaining;
-    $('rlResetAfter').textContent=Math.ceil(parseFloat(resetAfter||0));
-    $('rlBucket').textContent=bucket||'-';
-    el.style.display='';
-  }
-}
-
-function updateThemeIcon(){
-  $('themeBtn').textContent=document.body.classList.contains('light')?'\u2600':'\u263E';
-}
-
-function showToast(msg,type){const t=$('toast');t.textContent=msg;t.className=`toast ${type} visible`;setTimeout(()=>t.className=`toast ${type}`,3000);}
-
 function exportAllData(){
-  const data={webhooks:LS.get(KEYS.webhooks,[]),templates:LS.get(KEYS.templates,[]),history:LS.get(KEYS.history,[]),formState:getFormState()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='discord-webhook-data.json';a.click();URL.revokeObjectURL(a.href);
+  var data={
+    formState:getFormState(),
+    webhooks:LS.get(KEYS.webhooks,[]),
+    history:LS.get(KEYS.history,[]),
+    templates:LS.get(KEYS.templates,[])
+  };
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='discord-wsend-export.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 function importAllData(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
+  var file=e.target.files[0];
+  if(!file)return;
+  var reader=new FileReader();
   reader.onload=function(ev){
     try{
-      const data=JSON.parse(ev.target.result);
-      if(data.webhooks)LS.set(KEYS.webhooks,data.webhooks);
-      if(data.templates)LS.set(KEYS.templates,data.templates);
-      if(data.history)LS.set(KEYS.history,data.history);
+      var data=JSON.parse(ev.target.result);
       if(data.formState)LS.set(KEYS.formState,data.formState);
-      if(data.formState)setFormState(data.formState);
-      refreshWebhookSelect();renderWebhooks();renderTemplates();renderHistory();showToast('Data imported!','success');
-    }catch{showToast('Invalid JSON file','error')}
+      if(data.webhooks)LS.set(KEYS.webhooks,data.webhooks);
+      if(data.history)LS.set(KEYS.history,data.history);
+      if(data.templates)LS.set(KEYS.templates,data.templates);
+      showToast('Data imported! Reloading...','success');
+      setTimeout(function(){location.reload()},1000);
+    }catch(err){
+      showToast('Invalid JSON file','error');
+    }
   };
-  reader.readAsText(file);e.target.value='';
+  reader.readAsText(file);
+  e.target.value='';
 }
 
-document.querySelectorAll('input, textarea, select').forEach(el=>{
-  if(['savedWebhookSelect','fileInput','importFile','newWebhookName','newWebhookUrl','templateName','messageId','emojiSearch','customEmojiName','customEmojiId'].includes(el.id))return;
-  el.addEventListener('input',()=>{schedulePreview()});
+// History
+function addToHistory(payload,msgId,action,channelId){
+  var history=LS.get(KEYS.history,[]);
+  history.unshift({
+    payload:payload,
+    messageId:msgId,
+    action:action,
+    channelId:channelId,
+    timestamp:new Date().toISOString()
+  });
+  if(history.length>50)history=history.slice(0,50);
+  LS.set(KEYS.history,history);
+}
+
+function renderHistory(){
+  var history=LS.get(KEYS.history,[]);
+  var c=$('historyList');
+  if(!history.length){c.innerHTML='<div class="empty-state"><p>No messages sent yet</p></div>';return;}
+  c.innerHTML=history.map(function(item,i){
+    var time=new Date(item.timestamp).toLocaleString();
+    var content=item.payload.content||'';
+    var preview=content.length>120?content.substring(0,120)+'...':content;
+    return '<div class="history-item"><div class="meta"><span class="time">'+esc(time)+'</span><span class="rate-tag">'+esc(item.action)+'</span></div><div class="msg-body">'+esc(preview)+'</div><div class="msg-actions"><button class="btn btn-xs btn-secondary" onclick="loadFromHistory('+i+')">Load</button>'+(item.messageId?'<button class="btn btn-xs btn-warning" onclick="editFromHistory('+i+')">Edit</button><button class="btn btn-xs btn-danger" onclick="deleteFromHistory('+i+')">Delete</button>':'')+'<button class="btn btn-xs btn-danger" onclick="removeFromHistory('+i+')">Remove</button></div></div>';
+  }).join('');
+}
+
+function loadFromHistory(idx){
+  var history=LS.get(KEYS.history,[]);
+  if(idx>=history.length)return;
+  setFormState({webhook:$('webhook').value,username:$('username').value,avatarUrl:$('avatarUrl').value,content:history[idx].payload.content||'',tts:history[idx].payload.tts||false,suppressEmbeds:!!(history[idx].payload.flags&4),mentionEveryone:false,mentionRoles:false,mentionUsers:true,mentionParseIds:'',messageId:history[idx].messageId||'',embedEnabled:false,embedAuthorName:'',embedAuthorIcon:'',embedAuthorUrl:'',embedTitle:'',embedUrl:'',embedDesc:'',embedThumbnail:'',embedImage:'',embedColor:'#5865f2',embedFooterText:'',embedFooterIcon:'',embedTimestamp:true,embedFields:[],actionButtons:[[]]});
+  switchTab('compose');
+  showToast('Loaded from history','success');
+}
+
+function editFromHistory(idx){
+  var history=LS.get(KEYS.history,[]);
+  if(idx>=history.length)return;
+  $('messageId').value=history[idx].messageId||'';
+  updateSendButton();
+  switchTab('compose');
+}
+
+function deleteFromHistory(idx){
+  var history=LS.get(KEYS.history,[]);
+  if(idx>=history.length)return;
+  var msgId=history[idx].messageId;
+  if(!msgId)return;
+  var url=getWebhookUrl();
+  if(!url){showToast('Enter a webhook URL','error');return;}
+  fetch(url+'/messages/'+msgId,{method:'DELETE'}).then(function(r){
+    if(r.ok||r.status===204){showToast('Message deleted','success');}
+    else{return r.json().then(function(err){throw new Error(err.message||'HTTP '+r.status)})}
+  }).catch(function(err){showToast('Error: '+err.message,'error')});
+}
+
+function removeFromHistory(idx){
+  var history=LS.get(KEYS.history,[]);
+  history.splice(idx,1);
+  LS.set(KEYS.history,history);
+  renderHistory();
+}
+
+function clearHistory(){
+  if(!confirm('Clear all message history?'))return;
+  LS.set(KEYS.history,[]);
+  renderHistory();
+  showToast('History cleared','success');
+}
+
+// Templates
+function saveAsTemplate(){
+  $('templateName').value='';
+  $('templateModal').classList.add('open');
+  $('templateName').focus();
+}
+
+function confirmSaveTemplate(){
+  var name=$('templateName').value.trim();
+  if(!name){showToast('Enter a template name','error');return;}
+  var templates=LS.get(KEYS.templates,[]);
+  templates.push({name:name,state:getFormState()});
+  LS.set(KEYS.templates,templates);
+  closeModal('templateModal');
+  showToast('Template saved!','success');
+}
+
+function renderTemplates(){
+  var templates=LS.get(KEYS.templates,[]);
+  var c=$('templateList');
+  if(!templates.length){c.innerHTML='<div class="empty-state"><p>No templates saved yet. Compose a message and click "Save as Template".</p></div>';return;}
+  c.innerHTML=templates.map(function(t,i){
+    return '<div class="template-card" onclick="loadTemplate('+i+')"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="t-name">'+esc(t.name)+'</div><div class="t-info">'+(t.state.content||'No content').substring(0,80)+'</div></div><button class="btn btn-xs btn-danger" onclick="event.stopPropagation();deleteTemplate('+i+')">Delete</button></div></div>';
+  }).join('');
+}
+
+function loadTemplate(idx){
+  var templates=LS.get(KEYS.templates,[]);
+  if(idx>=templates.length)return;
+  setFormState(templates[idx].state);
+  switchTab('compose');
+  showToast('Template loaded','success');
+}
+
+function deleteTemplate(idx){
+  var templates=LS.get(KEYS.templates,[]);
+  templates.splice(idx,1);
+  LS.set(KEYS.templates,templates);
+  renderTemplates();
+}
+
+// Webhooks tab
+function addWebhook(){
+  var name=$('newWebhookName').value.trim();
+  var url=$('newWebhookUrl').value.trim();
+  if(!name||!url){showToast('Enter name and URL','error');return;}
+  var webhooks=LS.get(KEYS.webhooks,[]);
+  webhooks.push({name:name,url:url,username:$('newWebhookUsername').value.trim(),avatar:$('newWebhookAvatar').value.trim()});
+  LS.set(KEYS.webhooks,webhooks);
+  $('newWebhookName').value='';
+  $('newWebhookUrl').value='';
+  $('newWebhookUsername').value='';
+  $('newWebhookAvatar').value='';
+  renderWebhooks();
+  refreshWebhookSelect();
+  showToast('Webhook saved!','success');
+}
+
+function renderWebhooks(){
+  var webhooks=LS.get(KEYS.webhooks,[]);
+  var c=$('webhookList');
+  if(!webhooks.length){c.innerHTML='<div class="empty-state"><p>No saved webhooks yet. Add one above.</p></div>';return;}
+  c.innerHTML=webhooks.map(function(w,i){
+    return '<div class="saved-webhook" onclick="loadWebhookFromTab('+i+')"><div style="flex:1;min-width:0"><div class="name">'+esc(w.name)+'</div><div class="url">'+esc(w.url)+'</div>'+(w.username?'<div style="font-size:11px;color:var(--text-muted)">User: '+esc(w.username)+'</div>':'')+'</div><button class="btn btn-xs btn-danger" onclick="event.stopPropagation();deleteWebhook('+i+')">Delete</button></div>';
+  }).join('');
+}
+
+function loadWebhookFromTab(idx){
+  var webhooks=LS.get(KEYS.webhooks,[]);
+  if(idx>=webhooks.length)return;
+  var w=webhooks[idx];
+  $('webhook').value=w.url;
+  if(w.username)$('username').value=w.username;
+  if(w.avatar)$('avatarUrl').value=w.avatar;
+  validateWebhook();
+  schedulePreview();
+  switchTab('compose');
+  showToast('Webhook loaded','success');
+}
+
+function deleteWebhook(idx){
+  var webhooks=LS.get(KEYS.webhooks,[]);
+  webhooks.splice(idx,1);
+  LS.set(KEYS.webhooks,webhooks);
+  renderWebhooks();
+  refreshWebhookSelect();
+}
+
+// Saved webhook select in compose
+function refreshWebhookSelect(){
+  var webhooks=LS.get(KEYS.webhooks,[]);
+  var sel=$('savedWebhookSelect');
+  sel.innerHTML='<option value="">-- Select a saved profile --</option>';
+  webhooks.forEach(function(w,i){
+    sel.innerHTML+='<option value="'+i+'">'+esc(w.name)+'</option>';
+  });
+}
+
+function loadSavedWebhook(){
+  var idx=parseInt($('savedWebhookSelect').value);
+  if(isNaN(idx))return;
+  var webhooks=LS.get(KEYS.webhooks,[]);
+  if(idx>=webhooks.length)return;
+  var w=webhooks[idx];
+  $('webhook').value=w.url;
+  if(w.username)$('username').value=w.username;
+  if(w.avatar)$('avatarUrl').value=w.avatar;
+  validateWebhook();
+  schedulePreview();
+}
+
+function saveCurrentAsProfile(){
+  var url=$('webhook').value.trim();
+  var name=$('username').value.trim()||'Webhook '+(new Date()).toLocaleTimeString();
+  if(!url){showToast('Enter a webhook URL first','error');return;}
+  var webhooks=LS.get(KEYS.webhooks,[]);
+  webhooks.push({name:name,url:url,username:$('username').value.trim(),avatar:$('avatarUrl').value.trim()});
+  LS.set(KEYS.webhooks,webhooks);
+  refreshWebhookSelect();
+  renderWebhooks();
+  showToast('Profile saved!','success');
+}
+
+function loadLastMessageId(){
+  if(_lastSentMessageId){
+    $('messageId').value=_lastSentMessageId;
+    updateSendButton();
+    showToast('Loaded last sent ID: '+_lastSentMessageId,'success');
+  }else{
+    showToast('No message ID from this session yet','error');
+  }
+}
+
+function selectRecentMsgId(){
+  var sel=$('recentMsgIds');
+  var val=sel.value;
+  if(!val)return;
+  $('messageId').value=val;
+  updateSendButton();
+  sel.value='';
+}
+
+function refreshRecentMsgIds(){
+  var history=LS.get(KEYS.history,[]);
+  var sel=$('recentMsgIds');
+  var currentOptions=sel.innerHTML;
+  sel.innerHTML='<option value="">Recent IDs</option>';
+  var ids=history.filter(function(h){return h.messageId}).slice(0,10);
+  ids.forEach(function(h){
+    sel.innerHTML+='<option value="'+esc(h.messageId)+'">'+esc(h.messageId.substring(0,8))+'... '+esc(h.action)+'</option>';
+  });
+}
+
+// Emoji picker
+function buildEmojiTabs(){
+  var tabs=$('emojiTabs');
+  tabs.innerHTML='';
+  Object.keys(EMOJI_DATA).forEach(function(cat,i){
+    var t=document.createElement('div');
+    t.className='ep-tab'+(i===0?' active':'');
+    t.textContent=cat;
+    t.onclick=function(){
+      _emojiCategory=cat;
+      document.querySelectorAll('.ep-tab').forEach(function(x){x.classList.remove('active')});
+      t.classList.add('active');
+      renderEmojiGrid();
+    };
+    tabs.appendChild(t);
+  });
+}
+
+function renderEmojiGrid(search){
+  var grid=$('emojiGrid');
+  var emojis=EMOJI_DATA[_emojiCategory]||[];
+  var filtered=search?emojis.filter(function(e){return e[1].toLowerCase().includes(search.toLowerCase())}):emojis;
+  grid.innerHTML=filtered.map(function(e){return '<span title="'+esc(e[1])+'" onclick="insertEmoji(\''+e[0].replace(/'/g,"\\'")+'\')">'+e[0]+'</span>'}).join('');
+}
+
+function filterEmojis(){
+  renderEmojiGrid($('emojiSearch').value);
+}
+
+function openEmojiPicker(e,target,btnTarget){
+  _emojiTarget=target;
+  _emojiBtnTarget=btnTarget||null;
+  var picker=$('emojiPicker');
+  var rect=e.currentTarget.getBoundingClientRect();
+  picker.style.top=(rect.bottom+4)+'px';
+  picker.style.left=Math.min(rect.left,window.innerWidth-330)+'px';
+  picker.classList.add('open');
+  $('emojiSearch').value='';
+  buildEmojiTabs();
+  renderEmojiGrid();
+  setTimeout(function(){$('emojiSearch').focus()},50);
+}
+
+function openBtnEmojiPicker(e,rowIdx,btnIdx){
+  openEmojiPicker(e,null,{row:rowIdx,btn:btnIdx});
+}
+
+function insertEmoji(emoji){
+  if(_emojiBtnTarget){
+    setButtonEmoji(_emojiBtnTarget.row,_emojiBtnTarget.btn,emoji);
+    closeEmojiPicker();
+    return;
+  }
+  if(_emojiTarget){
+    var el=$(_emojiTarget);
+    var start=el.selectionStart;
+    var end=el.selectionEnd;
+    var val=el.value;
+    el.value=val.substring(0,start)+emoji+val.substring(end);
+    el.selectionStart=el.selectionEnd=start+emoji.length;
+    el.focus();
+    el.dispatchEvent(new Event('input'));
+  }
+  closeEmojiPicker();
+}
+
+function setButtonEmoji(rowIdx,btnIdx,emoji){
+  window._actionButtons[rowIdx][btnIdx].emoji=emoji;
+  renderActionButtons();
+  schedulePreview();
+}
+
+function closeEmojiPicker(){
+  $('emojiPicker').classList.remove('open');
+}
+
+function openCustomEmojiModal(){
+  closeEmojiPicker();
+  $('customEmojiName').value='';
+  $('customEmojiId').value='';
+  $('customEmojiAnimated').checked=false;
+  updateCustomEmojiPreview();
+  $('customEmojiModal').classList.add('open');
+}
+
+function updateCustomEmojiPreview(){
+  var name=$('customEmojiName').value||'name';
+  var id=$('customEmojiId').value;
+  var animated=$('customEmojiAnimated').checked;
+  var prefix=animated?'a':':';
+  $('cepName').textContent=name;
+  $('cepId').textContent=id?':'+id:'';
+}
+
+function insertCustomEmoji(){
+  var name=$('customEmojiName').value.trim();
+  var id=$('customEmojiId').value.trim();
+  var animated=$('customEmojiAnimated').checked;
+  if(!name){showToast('Enter an emoji name','error');return;}
+  var emoji;
+  if(id){
+    emoji=animated?'a:'+name+':'+id:':'+name+':'+id;
+  }else{
+    emoji=':'+name+':';
+  }
+  closeModal('customEmojiModal');
+  if(_emojiBtnTarget){
+    setButtonEmoji(_emojiBtnTarget.row,_emojiBtnTarget.btn,emoji);
+  }else if(_emojiTarget){
+    var el=$(_emojiTarget);
+    var start=el.selectionStart;
+    var end=el.selectionEnd;
+    el.value=el.value.substring(0,start)+emoji+el.value.substring(end);
+    el.selectionStart=el.selectionEnd=start+emoji.length;
+    el.focus();
+    el.dispatchEvent(new Event('input'));
+  }
+}
+
+document.addEventListener('click',function(e){
+  var picker=$('emojiPicker');
+  if(!picker.contains(e.target)&&!e.target.closest('[onclick*="openEmojiPicker"]')&&!e.target.closest('.btn-emoji-display')){
+    closeEmojiPicker();
+  }
 });
 
-document.querySelectorAll('input[type=checkbox]').forEach(el=>{
-  if(['customEmojiAnimated'].includes(el.id))return;
-  el.addEventListener('change',()=>{schedulePreview()});
-});
-
+// Init
+migrateFormData();
 restoreFormState();
 refreshWebhookSelect();
 refreshRecentMsgIds();
 updatePreview();
 updateSendButton();
 updateThemeIcon();
+updateContentCount();
+updateEmbedDescCount();
 
-document.addEventListener('keydown',e=>{
+document.addEventListener('keydown',function(e){
   if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
     e.preventDefault();
     sendMessage();
   }
 });
+
+$('content').addEventListener('input',updateContentCount);
+$('embedDesc').addEventListener('input',updateEmbedDescCount);
 </script>
 </body>
 </html>
