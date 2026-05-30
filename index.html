@@ -15,6 +15,13 @@
 --border:#44474c;--radius:8px;
 --btn-primary:#5865f2;--btn-secondary:#4f545c;--btn-success:#3ba55d;--btn-danger:#ed4245;
 }
+body.light{
+--bg-primary:#ffffff;--bg-secondary:#f2f3f5;--bg-tertiary:#e3e5e8;
+--bg-input:#e3e5e8;--text-primary:#2e3338;--text-secondary:#4f5660;
+--text-muted:#747f8d;--accent:#5865f2;--accent-hover:#4752c4;
+--success:#3ba55d;--error:#ed4245;--warning:#faa61a;
+--border:#e3e5e8;--btn-primary:#5865f2;--btn-secondary:#4f5660;--btn-success:#3ba55d;--btn-danger:#ed4245;
+}
 body{font-family:'Inter',sans-serif;background:var(--bg-tertiary);color:var(--text-primary);min-height:100vh}
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--bg-tertiary)}
@@ -160,6 +167,16 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
 .file-drop.dragover{border-color:var(--accent);background:rgba(88,101,242,.1)}
 .file-drop p{color:var(--text-muted);font-size:13px}
 .file-drop .filename{color:var(--text-primary);font-weight:500;margin-top:4px}
+.file-drop .file-list{margin-top:8px;text-align:left}
+.file-drop .file-item{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;background:var(--bg-input);border-radius:4px;margin-top:4px;font-size:12px;color:var(--text-primary)}
+.file-drop .file-item button{background:none;border:none;color:var(--error);cursor:pointer;font-size:14px;padding:0 4px}
+body.light .toggle .slider::before{background:#fff}
+body.light .action-btn-preview.link-btn,body.light .action-btn-preview.secondary-btn{color:#fff}
+body.light .file-drop:hover{background:rgba(88,101,242,.08)}
+body.light .modal-overlay{background:rgba(0,0,0,.3)}
+
+.rate-tag{display:inline-block;background:var(--bg-secondary);color:var(--text-muted);font-size:10px;padding:2px 6px;border-radius:3px;margin-left:4px}
+.rate-tag.ratelimited{color:var(--error);border:1px solid var(--error)}
 
 .empty-state{text-align:center;padding:32px 16px;color:var(--text-muted)}
 .empty-state svg{width:40px;height:40px;margin-bottom:8px;opacity:.5}
@@ -198,6 +215,8 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
 <div class="header">
   <h1>Discord Webhook Sender</h1>
   <div class="header-actions">
+    <button class="btn btn-sm btn-secondary" id="themeBtn" onclick="toggleTheme()" title="Toggle theme">&#9790;</button>
+    <button class="btn btn-sm btn-secondary" onclick="copyPayload()" title="Copy JSON payload">Copy JSON</button>
     <button class="btn btn-sm btn-secondary" onclick="exportAllData()" title="Export all data">Export</button>
     <button class="btn btn-sm btn-secondary" onclick="document.getElementById('importFile').click()" title="Import data">Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importAllData(event)">
@@ -232,7 +251,19 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
           <div class="field">
             <label>Webhook URL</label>
             <input type="url" id="webhook" placeholder="https://discord.com/api/webhooks/...">
-            <div class="char-count" id="webhookStatus"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="char-count" id="webhookStatus"></div>
+              <button class="btn btn-xs btn-secondary" onclick="fetchWebhookInfo()" style="margin-top:2px">Fetch Info</button>
+            </div>
+          </div>
+          <div id="webhookInfo" style="display:none" class="field">
+            <div style="background:var(--bg-secondary);border-radius:6px;padding:10px 12px;font-size:12px">
+              <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <span><strong>Server:</strong> <span id="whGuild">-</span></span>
+                <span><strong>Channel:</strong> <span id="whChannel">-</span></span>
+                <span><strong>Name:</strong> <span id="whName">-</span></span>
+              </div>
+            </div>
           </div>
           <div class="field-row">
             <div class="field">
@@ -263,17 +294,49 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
                 </label>
               </div>
             </div>
-            <textarea id="content" rows="5" placeholder="Type your message here... (Markdown supported)&#10;&#10;Unicode emoji: &#x1F60A; &#x1F44D; &#x2764;&#xFE0F;&#10;Custom emoji: :name: or :name:id (preview won't render these)"></textarea>
+            <textarea id="content" rows="5" placeholder="Type your message here... (Markdown supported)&#10;&#10;Unicode emoji: &#x1F60A; &#x1F44D; &#x2764;&#xFE0F;&#10;Custom emoji: :name: or :name:id (preview won't render these)&#10;&#10;Ctrl+Enter to send"></textarea>
             <div class="char-count" id="contentCount">0 / 2000</div>
           </div>
 
           <div class="field">
-            <label>File Attachment</label>
-            <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
-              <p>Click or drag a file here (max 25MB)</p>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <label style="margin-bottom:0">File Attachments</label>
+              <span style="font-size:11px;color:var(--text-muted)" id="fileCount">0 / 10</span>
+            </div>
+            <div class="file-drop" id="fileDrop">
+              <p>Click or drag files here (max 10 files, 25MB each)</p>
               <div class="filename" id="fileName"></div>
             </div>
-            <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(event)">
+            <input type="file" id="fileInput" style="display:none" multiple onchange="handleFileSelect(event)">
+          </div>
+
+          <div class="panel" style="padding:12px;margin-bottom:0">
+            <div class="panel-title" style="margin-bottom:8px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Advanced Options
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="toggle-row" style="margin-bottom:0">
+                <label class="toggle" style="margin:0"><input type="checkbox" id="suppressEmbeds"><span class="slider"></span></label>
+                <span class="toggle-label" style="font-size:12px">Suppress Embeds</span>
+              </div>
+              <div class="toggle-row" style="margin-bottom:0">
+                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionEveryone"><span class="slider"></span></label>
+                <span class="toggle-label" style="font-size:12px">@everyone</span>
+              </div>
+              <div class="toggle-row" style="margin-bottom:0">
+                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionRoles"><span class="slider"></span></label>
+                <span class="toggle-label" style="font-size:12px">All Roles</span>
+              </div>
+              <div class="toggle-row" style="margin-bottom:0">
+                <label class="toggle" style="margin:0"><input type="checkbox" id="mentionUsers" checked><span class="slider"></span></label>
+                <span class="toggle-label" style="font-size:12px">User Pings</span>
+              </div>
+            </div>
+            <div class="field" style="margin-top:8px;margin-bottom:0">
+              <label style="font-size:10px">Allowed Role/User IDs (comma separated)</label>
+              <input type="text" id="mentionParseIds" placeholder="e.g. 123456,789012 for specific roles/users">
+            </div>
           </div>
 
           <div class="field">
@@ -421,6 +484,9 @@ font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;tra
         <div class="btn-group" style="margin-top:8px">
           <button class="btn btn-secondary btn-block" onclick="saveAsTemplate()">Save as Template</button>
           <button class="btn btn-secondary btn-block" onclick="clearForm()">Clear Form</button>
+        </div>
+        <div id="rateLimitInfo" style="display:none;margin-top:8px;background:var(--bg-secondary);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--text-muted)">
+          <strong>Rate Limit:</strong> <span id="rlRemaining">-</span> remaining &middot; resets in <span id="rlResetAfter">-</span>s &middot; bucket: <span id="rlBucket">-</span>
         </div>
       </div>
 
@@ -871,21 +937,49 @@ function isCustomEmoji(str){
 }
 
 function handleFileSelect(e){
-  const file=e.target.files[0];
-  if(file)showFile(file);
+  const files=Array.from(e.target.files);
+  if(!files.length)return;
+  if(!window._attachedFiles)window._attachedFiles=[];
+  window._attachedFiles=window._attachedFiles.concat(files).slice(0,10);
+  e.target.value='';
+  renderFileList();
 }
 
-function showFile(file){
-  $('fileName').textContent=file.name+' ('+(file.size/1024/1024).toFixed(2)+' MB)';
-  $('fileDrop').querySelector('p').textContent='File selected:';
-  window._attachedFile=file;
+function removeFile(idx){
+  window._attachedFiles.splice(idx,1);
+  if(!window._attachedFiles.length)window._attachedFiles=null;
+  renderFileList();
+  updatePreview();
 }
 
+function renderFileList(){
+  const files=window._attachedFiles||[];
+  $('fileCount').textContent=files.length+' / 10';
+  if(!files.length){
+    $('fileName').innerHTML='';
+    $('fileDrop').querySelector('p').textContent='Click or drag files here (max 10 files, 25MB each)';
+    return;
+  }
+  $('fileDrop').querySelector('p').textContent=files.length+' file'+(files.length>1?'s':'')+' selected:';
+  let html='<div class="file-list">';
+  files.forEach((f,i)=>{
+    html+=`<div class="file-item"><span>${esc(f.name)} (${(f.size/1024/1024).toFixed(2)} MB)</span><button onclick="removeFile(${i})">&times;</button></div>`;
+  });
+  html+='</div>';
+  $('fileName').innerHTML=html;
+}
+
+$('fileDrop').addEventListener('click',()=>{$('fileInput').click()});
 $('fileDrop').addEventListener('dragover',e=>{e.preventDefault();$('fileDrop').classList.add('dragover')});
 $('fileDrop').addEventListener('dragleave',()=>$('fileDrop').classList.remove('dragover'));
 $('fileDrop').addEventListener('drop',e=>{
   e.preventDefault();$('fileDrop').classList.remove('dragover');
-  if(e.dataTransfer.files[0])showFile(e.dataTransfer.files[0]);
+  const files=Array.from(e.dataTransfer.files);
+  if(!files.length)return;
+  if(!window._attachedFiles)window._attachedFiles=[];
+  window._attachedFiles=window._attachedFiles.concat(files).slice(0,10);
+  renderFileList();
+  updatePreview();
 });
 
 function getFormState(){
@@ -895,6 +989,11 @@ function getFormState(){
     avatarUrl:$('avatarUrl').value,
     content:$('content').value,
     tts:$('ttsToggle').checked,
+    suppressEmbeds:$('suppressEmbeds').checked,
+    mentionEveryone:$('mentionEveryone').checked,
+    mentionRoles:$('mentionRoles').checked,
+    mentionUsers:$('mentionUsers').checked,
+    mentionParseIds:$('mentionParseIds').value,
     messageId:$('messageId').value,
     embedEnabled:$('embedToggle').checked,
     embedAuthorName:$('embedAuthorName').value,
@@ -911,7 +1010,8 @@ function getFormState(){
     embedTimestamp:$('embedTimestamp').checked,
     embedFields:getEmbedFields(),
     actionButtons:JSON.parse(JSON.stringify(window._actionButtons)),
-    buttonsExpanded:$('buttonsBody').classList.contains('open')
+    buttonsExpanded:$('buttonsBody').classList.contains('open'),
+    theme:document.body.classList.contains('light')?'light':'dark'
   };
 }
 
@@ -922,6 +1022,11 @@ function setFormState(s){
   $('avatarUrl').value=s.avatarUrl||'';
   $('content').value=s.content||'';
   $('ttsToggle').checked=s.tts||false;
+  $('suppressEmbeds').checked=s.suppressEmbeds||false;
+  $('mentionEveryone').checked=s.mentionEveryone||false;
+  $('mentionRoles').checked=s.mentionRoles||false;
+  $('mentionUsers').checked=s.mentionUsers!==undefined?s.mentionUsers:true;
+  $('mentionParseIds').value=s.mentionParseIds||'';
   $('messageId').value=s.messageId||'';
   $('embedToggle').checked=s.embedEnabled||false;
   $('embedAuthorName').value=s.embedAuthorName||'';
@@ -1010,7 +1115,7 @@ function updatePreview(){
   let html='<div class="preview-card">';
   if(content||username){
     if(username)html+=`<div class="preview-username">${esc(username)}</div>`;
-    if(content)html+=`<div class="preview-content">${esc(content)}</div>`;
+    if(content)html+=`<div class="preview-content">${renderMarkdown(content)}</div>`;
   }
 
   if(showEmbed&&(eTitle||eDesc||eAuthor||fields.length||eImage||eThumbnail||eFooterText)){
@@ -1026,13 +1131,13 @@ function updatePreview(){
       if(eUrl)html+=`<div class="embed-title"><a href="${esc(eUrl)}" target="_blank" style="color:var(--accent)">${esc(eTitle)}</a></div>`;
       else html+=`<div class="embed-title">${esc(eTitle)}</div>`;
     }
-    if(eDesc)html+=`<div class="embed-desc">${esc(eDesc)}</div>`;
+    if(eDesc)html+=`<div class="embed-desc">${renderMarkdown(eDesc)}</div>`;
     if(fields.length){
       html+='<div style="margin-top:8px">';
       fields.forEach(f=>{
         if(!f.name&&!f.value)return;
         const cls=f.inline?' embed-field inline':' embed-field';
-        html+=`<div class="${cls}"><div class="embed-field-name">${esc(f.name||'\u200b')}</div><div class="embed-field-value">${esc(f.value||'\u200b')}</div></div>`;
+        html+=`<div class="${cls}"><div class="embed-field-name">${esc(f.name||'\u200b')}</div><div class="embed-field-value">${renderMarkdown(f.value||'\u200b')}</div></div>`;
       });
       html+='</div>';
     }
@@ -1087,11 +1192,35 @@ function buildPayload(){
   const username=$('username').value.trim();
   const avatarUrl=$('avatarUrl').value.trim();
   const tts=$('ttsToggle').checked;
+  const suppressEmbeds=$('suppressEmbeds').checked;
 
   if(username)p.username=username;
   if(avatarUrl)p.avatar_url=avatarUrl;
   if(content)p.content=content;
   if(tts)p.tts=true;
+  if(suppressEmbeds)p.flags=4;
+
+  const mentionEveryone=$('mentionEveryone').checked;
+  const mentionRoles=$('mentionRoles').checked;
+  const mentionUsers=$('mentionUsers').checked;
+  const parseIds=$('mentionParseIds').value.trim();
+  if(!mentionEveryone||!mentionRoles||!mentionUsers||parseIds){
+    const am={parse:[]};
+    if(mentionEveryone)am.parse.push('everyone');
+    if(mentionRoles)am.parse.push('roles');
+    if(mentionUsers)am.parse.push('users');
+    const roleIds=[];const userIds=[];
+    if(parseIds){
+      parseIds.split(',').map(s=>s.trim()).filter(Boolean).forEach(id=>{
+        if(id.startsWith('<@&'))roleIds.push(id.replace(/[<@&>]/g,''));
+        else if(id.startsWith('<@'))userIds.push(id.replace(/[<@>]/g,''));
+        else if(/^\d+$/.test(id))userIds.push(id);
+      });
+    }
+    if(roleIds.length)am.roles=roleIds;
+    if(userIds.length)am.users=userIds;
+    if(am.parse.length||am.roles||am.users)p.allowed_mentions=am;
+  }
 
   if($('embedToggle').checked){
     const embed={};
@@ -1138,7 +1267,7 @@ async function sendMessage(){
   const isEdit=msgId!=='';
   const payload=buildPayload();
 
-  if(!payload.content&&!payload.embeds&&!payload.components&&!window._attachedFile){
+  if(!payload.content&&!payload.embeds&&!payload.components&&!window._attachedFiles){
     showToast('Message cannot be empty','error');return;
   }
 
@@ -1156,10 +1285,10 @@ async function sendMessage(){
 
   try{
     let res;
-    if(window._attachedFile){
+    if(window._attachedFiles&&window._attachedFiles.length){
       const fd=new FormData();
       fd.append('payload_json',JSON.stringify(payload));
-      fd.append('file',window._attachedFile);
+      window._attachedFiles.forEach((f,i)=>fd.append(`file${i}`,f));
       const endpoint=isEdit?`${url}/messages/${msgId}`:url;
       res=await fetch(endpoint,{method:isEdit?'PATCH':'POST',body:fd});
     }else{
@@ -1171,17 +1300,19 @@ async function sendMessage(){
       });
     }
 
+    renderRateLimit(res.headers);
+
     if(res.status===204||(res.status>=200&&res.status<300)){
-      let msgId='';
-      try{const data=await res.json();if(data&&data.id)msgId=data.id}catch{}
-      if(msgId){
-        $('messageId').value=msgId;
-        LS.set('dws_lastMessageId',msgId);
-        showToast(isEdit?'Message updated!':'Message sent! (ID: '+msgId+')','success');
+      let msgIdOut='';
+      try{const data=await res.json();if(data&&data.id)msgIdOut=data.id}catch{}
+      if(msgIdOut){
+        $('messageId').value=msgIdOut;
+        LS.set('dws_lastMessageId',msgIdOut);
+        showToast(isEdit?'Message updated!':'Message sent! (ID: '+msgIdOut+')','success');
       }else{
         showToast(isEdit?'Message updated!':'Message sent!','success');
       }
-      addHistory({url,payload,messageId:msgId,type:isEdit?'edit':'send',timestamp:new Date().toISOString()});
+      addHistory({url,payload,messageId:msgIdOut,type:isEdit?'edit':'send',timestamp:new Date().toISOString()});
       refreshRecentMsgIds();
     }else{
       const text=await res.text().catch(()=>'');
@@ -1336,6 +1467,18 @@ function loadHistoryItem(i){
   validateWebhook();updatePreview();switchTab('compose');showToast('Message loaded into composer','success');
 }
 
+function applyTheme(theme){
+  if(theme==='light')document.body.classList.add('light');
+  else document.body.classList.remove('light');
+  $('themeBtn').textContent=theme==='light'?'\u2600':'\u263E';
+}
+
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  $('themeBtn').textContent=isLight?'\u2600':'\u263E';
+  saveFormState();
+}
+
 function editHistoryItem(i){
   loadHistoryItem(i);
   showToast('Ready to edit - message ID loaded','success');
@@ -1410,18 +1553,76 @@ function closeModal(id){$(id).classList.remove('open');}
 function clearForm(){
   if(!confirm('Clear the entire form?'))return;
   $('webhook').value='';$('username').value='';$('avatarUrl').value='';$('content').value='';
-  $('ttsToggle').checked=false;$('messageId').value='';$('embedToggle').checked=false;
+  $('ttsToggle').checked=false;$('suppressEmbeds').checked=false;
+  $('mentionEveryone').checked=false;$('mentionRoles').checked=false;$('mentionUsers').checked=true;
+  $('mentionParseIds').value='';
+  $('messageId').value='';$('embedToggle').checked=false;
   $('embedAuthorName').value='';$('embedAuthorIcon').value='';$('embedAuthorUrl').value='';
   $('embedTitle').value='';$('embedUrl').value='';$('embedDesc').value='';
   $('embedThumbnail').value='';$('embedImage').value='';
   $('embedColor').value='#5865f2';$('embedColorPicker').value='#5865f2';
   $('embedFooterText').value='';$('embedFooterIcon').value='';$('embedTimestamp').checked=true;
   $('embedFieldsContainer').innerHTML='';
+  $('webhookInfo').style.display='none';
+  $('rateLimitInfo').style.display='none';
   window._actionButtons=[[]];renderActionButtons();
-  window._attachedFile=null;$('fileName').textContent='';
-  $('fileDrop').querySelector('p').textContent='Click or drag a file here (max 25MB)';
+  window._attachedFiles=null;renderFileList();
   $('fileInput').value='';$('webhookStatus').textContent='';
   toggleEmbed();updatePreview();
+}
+
+function copyPayload(){
+  const payload=buildPayload();
+  const json=JSON.stringify(payload,null,2);
+  navigator.clipboard.writeText(json).then(()=>showToast('JSON copied to clipboard!','success')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=json;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('JSON copied!','success');
+  });
+}
+
+async function fetchWebhookInfo(){
+  const url=$('webhook').value.trim();
+  if(!url){showToast('Enter a webhook URL first','error');return;}
+  try{
+    const res=await fetch(url);
+    if(!res.ok){showToast('Invalid webhook or fetch failed','error');return;}
+    const data=await res.json();
+    $('whGuild').textContent=data.guild_id||'-';
+    $('whChannel').textContent=data.channel_id||'-';
+    $('whName').textContent=data.name||'-';
+    $('webhookInfo').style.display='';
+    if(data.name)$('username').value=data.name;
+    if(data.avatar)$('avatarUrl').value=`https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`;
+    showToast('Webhook info loaded!','success');
+  }catch(err){showToast('Failed to fetch: '+err.message,'error');}
+}
+
+function renderMarkdown(text){
+  if(!text)return'';
+  let html=esc(text);
+  html=html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  html=html.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  html=html.replace(/__(.+?)__/g,'<u>$1</u>');
+  html=html.replace(/~~(.+?)~~/g,'<del>$1</del>');
+  html=html.replace(/`([^`]+)`/g,'<code style="background:var(--bg-input);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
+  html=html.replace(/```([\s\S]*?)```/g,'<pre style="background:var(--bg-input);padding:8px;border-radius:4px;overflow-x:auto;font-size:12px;margin:4px 0"><code>$1</code></pre>');
+  return html;
+}
+
+function renderRateLimit(headers){
+  const el=$('rateLimitInfo');
+  const remaining=headers.get('X-RateLimit-Remaining');
+  const resetAfter=headers.get('X-RateLimit-Reset-After');
+  const bucket=headers.get('X-RateLimit-Bucket');
+  if(remaining!==null){
+    $('rlRemaining').textContent=remaining;
+    $('rlResetAfter').textContent=Math.ceil(parseFloat(resetAfter||0));
+    $('rlBucket').textContent=bucket||'-';
+    el.style.display='';
+  }
+}
+
+function updateThemeIcon(){
+  $('themeBtn').textContent=document.body.classList.contains('light')?'\u2600':'\u263E';
 }
 
 function showToast(msg,type){const t=$('toast');t.textContent=msg;t.className=`toast ${type} visible`;setTimeout(()=>t.className=`toast ${type}`,3000);}
@@ -1463,6 +1664,14 @@ restoreFormState();
 refreshWebhookSelect();
 refreshRecentMsgIds();
 updatePreview();
+updateThemeIcon();
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
+    e.preventDefault();
+    sendMessage();
+  }
+});
 </script>
 </body>
 </html>
