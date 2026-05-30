@@ -1130,7 +1130,7 @@ function updateSendButton(){
   var parsedId=parseMessageId(msgId);
   var btn=$('sendBtnText');
   if(parsedId&&parsedId.length>5){
-    btn.textContent='Edit Message';
+    btn.textContent='Update Message';
   }else{
     btn.textContent='Send Message';
   }
@@ -1198,6 +1198,8 @@ function sendMessage(){
     $('sendBtn').disabled=false;
     if(data&&data.id){
       _lastSentMessageId=data.id;
+      $('messageId').value=data.id;
+      updateSendButton();
       addToHistory(payload,data.id,isEdit?'edit':'send',data.channel_id);
       showToast(isEdit?'Message edited!':'Message sent!','success');
     }else{
